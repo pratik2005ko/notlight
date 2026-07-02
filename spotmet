@@ -1,0 +1,72 @@
+notlight — Metrics Report
+=========================
+
+PROJECT SIZE
+  Total:          4.8M
+  Source files:   1.5K lines across 4 files
+  Spotlight.qml:  1,334 lines (43K)
+  yt-search.cpp:  151 lines (4.2K)
+  shell.qml:      10 lines
+  toggle-spotlight: 10 lines
+
+BINARY FOOTPRINT
+  yt-search:      196K (ELF 64-bit, dynamically linked, not stripped)
+  Language:       C++17, compiled with g++ + libcurl + nlohmann/json
+
+RUNTIME RESOURCES
+  Process:        1 quickshell instance (spotlight shell)
+  RSS:            356 MB (quickshell's total — includes Qt/QML runtime)
+  CPU:            ~0.2% idle (negligible when not searching)
+  Disk (data):    103B aliases.json, 121B captures.json, 72B secrets.json
+
+PERFORMANCE — App Search (default mode)
+  Method:         In-memory JS array filter on 73 cached apps
+  Latency:        Instant (<1ms) — no process spawn, no I/O
+  Startup:        ~30ms Python scan on first open (cached thereafter)
+
+PERFORMANCE — File Search (/f)
+  Engine:         fd (Rust)
+  Debounce:       120ms
+  Typical query:  0.01–0.05s (fd is instant)
+  Results:        Top 30, sorted by prefix match + name length
+  Parser:         Shell script with extension-based categorization (no file --mime-type)
+
+PERFORMANCE — AI Answer (/s)
+  Engine:         Groq API (llama-3.3-70b-versatile) via XMLHttpRequest
+  Latency:        0.3–2s (depends on Groq server, not local)
+  Local cost:     Zero CPU — network-bound
+  Key storage:    secrets.json (~72B)
+
+PERFORMANCE — YouTube Search (/yt)
+  Engine:         Compiled C++ binary (yt-search), libcurl + nlohmann/json
+  CPU time:       0.05s user, 0.02s system
+  Wall time:      ~5s (network-bound, YouTube API response time)
+  Binary size:    196K
+  Node avoidance: Eliminated 50MB+ node_modules dependency
+
+PERFORMANCE — Google Search (/g)
+  Engine:         Qt.openUrlExternally
+  Latency:        Zero local — just opens browser
+
+PERFORMANCE — Web Mode (/w)
+  Engine:         In-memory JS object lookup (captures.json loaded on open)
+  Latency:        Instant (<1ms)
+
+PERFORMANCE — Capture Mode (/cap)
+  Engine:         JS string split + JSON write to captures.json
+  Latency:        <1ms (write is async via Process)
+
+ARCHITECTURE NOTES
+  - No Python overhead at search time: app scan runs once, all search is
+    JS-side filtering or native binary calls
+  - No database dependencies: uses flat JSON files (~100B each)
+  - Minimal shell piping: only fd results are piped through a shell script
+    (all other operations use direct QML/JS/Process calls)
+  - C++ binary for YouTube search avoids Node.js startup penalty
+    (~0.04s CPU vs ~0.3s for Node.js)
+
+MEMORY BREAKDOWN
+  quickshell daemon:  356 MB RSS (includes Qt GUI, QML engine, JS runtime)
+  Spotlight QML:      ~2-5 MB of that (QML objects, JS arrays, cached apps)
+  yt-search binary:   196K on disk, ~2 MB RSS during execution (ephemeral)
+  Data files:         <1 KB total (secrets, aliases, captures)
