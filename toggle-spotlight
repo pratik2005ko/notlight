@@ -1,0 +1,11 @@
+#!/bin/bash
+# Toggle the QuickShell Spotlight overlay
+# Bind this to Super+S in Hyprland
+
+CONFIG="spotlight"
+
+if ! qs ipc --config "$CONFIG" call spotlight toggle 2>/dev/null; then
+  quickshell --config "$CONFIG" --daemonize
+  sleep 0.3
+  qs ipc --config "$CONFIG" call spotlight toggle
+fi
