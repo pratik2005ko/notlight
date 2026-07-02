@@ -1,4 +1,4 @@
-# spotlight
+# notlight
 
 A multi-mode launcher for Hyprland built with [Quickshell](https://github.com/Quickshell/Quickshell).
 
@@ -24,8 +24,8 @@ A multi-mode launcher for Hyprland built with [Quickshell](https://github.com/Qu
 ## Installation
 
 ```bash
-git clone https://github.com/pratik2005ko/spotlight.git
-cd spotlight
+git clone https://github.com/pratik2005ko/notlight.git
+cd notlight
 # Compile YouTube search binary
 g++ -std=c++17 yt-search.cpp -o yt-search -lcurl
 ```
