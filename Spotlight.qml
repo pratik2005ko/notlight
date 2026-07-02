@@ -877,6 +877,8 @@ Scope {
               height: 20
               radius: 4
               color: Qt.rgba(0.65,0.42,1,0.12)
+              border.width: 1
+              border.color: Qt.rgba(0.65,0.42,1,0.35)
 
               Text {
                 id: modeLabel
