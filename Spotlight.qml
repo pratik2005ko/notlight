@@ -45,6 +45,10 @@ Scope {
   property string aliasInputDesktopId: ""
   property string aliasInputText: ""
   property bool aliasSavedFeedback: false
+  property bool captureSavedFeedback: false
+  property string captureFeedbackText: ""
+  property var captures: ({})
+  property string capturesPath: home + "/.config/quickshell/spotlight/captures.json"
 
   readonly property string home: Quickshell.env("HOME") || ""
 
@@ -82,6 +86,7 @@ Scope {
       if (!root.appsLoaded)
         root.loadApps()
       root.loadAliases()
+      root.loadCaptures()
       root.loadSecrets()
     }
   }
@@ -111,6 +116,8 @@ Scope {
     else if (raw.length >= 3 && raw.slice(0, 3) === "/s ") { newMode = "answer"; stripped = raw.slice(3) }
     else if (raw.length >= 3 && raw.slice(0, 3) === "/g ") { newMode = "google"; stripped = raw.slice(3) }
     else if (raw.length >= 4 && raw.slice(0, 4) === "/yt ") { newMode = "youtube"; stripped = raw.slice(4) }
+    else if (raw.length >= 3 && raw.slice(0, 3) === "/w ") { newMode = "web"; stripped = raw.slice(3) }
+    else if (raw.length >= 5 && raw.slice(0, 5) === "/cap ") { newMode = "capture"; stripped = raw.slice(5) }
 
     if (newMode !== "") {
       if (root.mode !== newMode) {
@@ -158,7 +165,7 @@ Scope {
         searchTimer.stop()
       return
     }
-    if (root.mode === "answer" || root.mode === "google") {
+    if (root.mode === "answer" || root.mode === "google" || root.mode === "web" || root.mode === "capture") {
       root.searchQuery = raw
       return
     }
@@ -321,6 +328,26 @@ Scope {
     stderr: StdioCollector {}
   }
 
+  Process {
+    id: captureLoadProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try {
+          var data = JSON.parse(text)
+          root.captures = data || ({})
+        } catch (e) {
+          root.captures = ({})
+        }
+      }
+    }
+    stderr: StdioCollector {}
+  }
+
+  Process {
+    id: captureSaveProc
+    stderr: StdioCollector {}
+  }
+
   function loadApps() {
     appScanProc.running = false
     appScanProc.command = ["python3", "-c",
@@ -393,6 +420,12 @@ Scope {
     aliasLoadProc.running = true
   }
 
+  function loadCaptures() {
+    captureLoadProc.running = false
+    captureLoadProc.command = ["sh", "-c", "cat \"" + root.capturesPath + "\" 2>/dev/null || echo '{}'"]
+    captureLoadProc.running = true
+  }
+
   function saveAlias(alias, desktopId) {
     var al = alias.trim().toLowerCase()
     if (al.length < 1) return
@@ -417,6 +450,37 @@ Scope {
       "mkdir -p \"$(dirname \"" + root.aliasesPath + "\")\" && " +
       "echo '" + json + "' > \"" + root.aliasesPath + "\""]
     aliasSaveProc.running = true
+  }
+
+  function saveCapture(code, url) {
+    var c = code.trim().toLowerCase()
+    if (c.length < 1 || !url || url.trim().length < 1) return
+    root.captures[c] = url.trim()
+    root.captureFeedbackText = "Saved! :" + c + " \u2192 " + url.trim()
+    root.captureSavedFeedback = true
+    captureFeedbackTimer.restart()
+    writeCaptures()
+  }
+
+  function removeCapture(code) {
+    var c = code.trim().toLowerCase()
+    if (root.captures[c]) {
+      delete root.captures[c]
+      writeCaptures()
+    }
+  }
+
+  function writeCaptures() {
+    captureSaveProc.running = false
+    var json = JSON.stringify(root.captures)
+    captureSaveProc.command = ["sh", "-c",
+      "mkdir -p \"$(dirname \"" + root.capturesPath + "\")\" && " +
+      "echo '" + json + "' > \"" + root.capturesPath + "\""]
+    captureSaveProc.running = true
+  }
+
+  function resolveCapture(code) {
+    return root.captures[code.trim().toLowerCase()] || ""
   }
 
   function resolveAlias(alias) {
@@ -617,11 +681,22 @@ Scope {
     onTriggered: root.aliasSavedFeedback = false
   }
 
+  Timer {
+    id: captureFeedbackTimer
+    interval: 2000
+    onTriggered: {
+      root.captureSavedFeedback = false
+      root.captureFeedbackText = ""
+    }
+  }
+
   readonly property string modePillText: {
     if (root.mode === "answer") return "ASK"
     if (root.mode === "file") return "FILE"
     if (root.mode === "google") return "GOOGLE"
     if (root.mode === "youtube") return "YOUTUBE"
+    if (root.mode === "web") return "WEB"
+    if (root.mode === "capture") return "CAP"
     return "APP"
   }
 
@@ -630,6 +705,8 @@ Scope {
     if (root.mode === "file") return "Search files..."
     if (root.mode === "google") return "Search Google..."
     if (root.mode === "youtube") return "Search YouTube..."
+    if (root.mode === "web") return "Type code to open..."
+    if (root.mode === "capture") return "<url> <code>..."
     return "Search apps..."
   }
 
@@ -760,6 +837,22 @@ Scope {
                     } else if (root.mode === "answer") {
                       if (!root.searching)
                         root.runWebSearch()
+                    } else if (root.mode === "web") {
+                      var code = root.searchQuery.trim().toLowerCase()
+                      var url = root.captures[code]
+                      if (url) {
+                        Qt.openUrlExternally(url)
+                        root.open = false
+                      }
+                    } else if (root.mode === "capture") {
+                      var text = root.searchQuery.trim()
+                      var lastSpace = text.lastIndexOf(" ")
+                      if (lastSpace > 0) {
+                        var capUrl = text.slice(0, lastSpace).trim()
+                        var capCode = text.slice(lastSpace + 1).trim()
+                        if (capUrl.length > 0 && capCode.length > 0)
+                          root.saveCapture(capCode, capUrl)
+                      }
                     } else {
                       root.launch(root.results[root.selectedIndex])
                     }
@@ -1206,6 +1299,25 @@ Scope {
                   }
                 }
               }
+            }
+          }
+
+          Rectangle {
+            width: parent.width
+            height: root.captureSavedFeedback ? 36 : 0
+            visible: height > 0
+            color: "transparent"
+            clip: true
+
+            Behavior on height {
+              NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+            }
+
+            Text {
+              anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
+              text: root.captureFeedbackText
+              color: "#4ade80"
+              font.pixelSize: 12
             }
           }
 
