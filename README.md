@@ -9,6 +9,8 @@ A multi-mode launcher for Hyprland built with [Quickshell](https://github.com/Qu
 - **AI answer** (`/s query`) — ask Groq AI for natural-language answers (Enter to trigger)
 - **Google search** (`/g query`) — open search query in browser (Enter to trigger)
 - **YouTube inline search** (`/yt query`) — search videos inline, preview results with duration, launch in browser on Enter
+- **Web mode** (`/w code`) — open a saved URL by its short name
+- **Capture mode** (`/cap url code`) — save a URL with a short name for quick access
 - **Alias system** — right-click an app result to set/remove a custom alias (boosts to top of search results)
 - **macOS-style spring animation** — centered panel with scale bounce on open/close
 
@@ -63,8 +65,10 @@ bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
 | `/s` | AI answer | Ask Groq AI (Enter to send) |
 | `/g` | Google search | Open Google search in browser (Enter to send) |
 | `/yt` | YouTube | Search videos inline (Enter to send, Enter on result to open) |
+| `/w` | Web | Open a saved URL by short name (Enter to open) |
+| `/cap` | Capture | Save a URL with a short code name (Enter to save) |
 
-Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.).
+Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.). Captures are stored in `~/.config/quickshell/spotlight/captures.json`.
 
 ## License
 
