@@ -49,6 +49,8 @@ Scope {
   property string captureFeedbackText: ""
   property var captures: ({})
   property string capturesPath: home + "/.config/quickshell/spotlight/captures.json"
+  property var commands: ({})
+  property string commandsPath: home + "/.config/quickshell/spotlight/commands.json"
 
   readonly property string home: Quickshell.env("HOME") || ""
 
@@ -61,6 +63,7 @@ Scope {
     other:  { label: "FILE",   color: "#64748b" },
     app:    { label: "APP",    color: "#f472b6" },
     youtube: { label: "YT",    color: "#ff0000" },
+    shell:  { label: "SHELL", color: "#4ade80" },
   })
 
   IpcHandler {
@@ -87,6 +90,7 @@ Scope {
         root.loadApps()
       root.loadAliases()
       root.loadCaptures()
+      root.loadCommands()
       root.loadSecrets()
     }
   }
@@ -118,6 +122,7 @@ Scope {
     else if (raw.length >= 4 && raw.slice(0, 4) === "/yt ") { newMode = "youtube"; stripped = raw.slice(4) }
     else if (raw.length >= 3 && raw.slice(0, 3) === "/w ") { newMode = "web"; stripped = raw.slice(3) }
     else if (raw.length >= 5 && raw.slice(0, 5) === "/cap ") { newMode = "capture"; stripped = raw.slice(5) }
+    else if (raw.length >= 4 && raw.slice(0, 4) === "/sh ") { newMode = "shell"; stripped = raw.slice(4) }
 
     if (newMode !== "") {
       if (root.mode !== newMode) {
@@ -165,7 +170,7 @@ Scope {
         searchTimer.stop()
       return
     }
-    if (root.mode === "answer" || root.mode === "google" || root.mode === "web" || root.mode === "capture") {
+    if (root.mode === "answer" || root.mode === "google" || root.mode === "web" || root.mode === "capture" || root.mode === "shell") {
       root.searchQuery = raw
       return
     }
@@ -180,7 +185,9 @@ Scope {
   }
 
   onSearchQueryChanged: {
-    if (root.mode === "app" && root.searchQuery.length > 0) {
+    if (root.mode === "shell") {
+      root.results = root.filterShell(root.searchQuery)
+    } else if (root.mode === "app" && root.searchQuery.length > 0) {
       root.results = root.filterApps(root.searchQuery)
     }
   }
@@ -348,6 +355,21 @@ Scope {
     stderr: StdioCollector {}
   }
 
+  Process {
+    id: commandLoadProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try {
+          var data = JSON.parse(text)
+          root.commands = data || ({})
+        } catch (e) {
+          root.commands = ({})
+        }
+      }
+    }
+    stderr: StdioCollector {}
+  }
+
   function loadApps() {
     appScanProc.running = false
     appScanProc.command = ["python3", "-c",
@@ -424,6 +446,52 @@ Scope {
     captureLoadProc.running = false
     captureLoadProc.command = ["sh", "-c", "cat \"" + root.capturesPath + "\" 2>/dev/null || echo '{}'"]
     captureLoadProc.running = true
+  }
+
+  function loadCommands() {
+    commandLoadProc.running = false
+    commandLoadProc.command = ["sh", "-c", "cat \"" + root.commandsPath + "\" 2>/dev/null || echo '{}'"]
+    commandLoadProc.running = true
+  }
+
+  function filterShell(q) {
+    if (q.length < 1) {
+      var all = []
+      for (var key in root.commands) {
+        all.push({
+          type: "shell",
+          category: "shell",
+          code: key,
+          command: root.commands[key],
+          info: root.categoryInfo["shell"],
+        })
+      }
+      return all.slice(0, 12)
+    }
+    var ql = q.toLowerCase()
+    var matched = []
+    for (var code in root.commands) {
+      var cmd = root.commands[code]
+      if (code.toLowerCase().indexOf(ql) >= 0 || cmd.toLowerCase().indexOf(ql) >= 0) {
+        matched.push({
+          type: "shell",
+          category: "shell",
+          code: code,
+          command: cmd,
+          info: root.categoryInfo["shell"],
+        })
+      }
+    }
+    matched.sort(function(a, b) {
+      var aPre = a.code.toLowerCase().indexOf(ql) === 0 ? 0 : 1
+      var bPre = b.code.toLowerCase().indexOf(ql) === 0 ? 0 : 1
+      if (aPre !== bPre) return aPre - bPre
+      var aCmdPre = a.command.toLowerCase().indexOf(ql) === 0 ? 0 : 1
+      var bCmdPre = b.command.toLowerCase().indexOf(ql) === 0 ? 0 : 1
+      if (aCmdPre !== bCmdPre) return aCmdPre - bCmdPre
+      return a.code.length - b.code.length
+    })
+    return matched.slice(0, 12)
   }
 
   function saveAlias(alias, desktopId) {
@@ -651,6 +719,10 @@ Scope {
       Qt.openUrlExternally("https://www.youtube.com/watch?v=" + item.videoId)
       return
     }
+    if (item.type === "shell") {
+      Quickshell.execDetached(["kitty", "-e", "/bin/sh", "-c", item.command])
+      return
+    }
     switch (item.category) {
       case "video":
       case "audio":
@@ -697,6 +769,7 @@ Scope {
     if (root.mode === "youtube") return "YOUTUBE"
     if (root.mode === "web") return "WEB"
     if (root.mode === "capture") return "CAP"
+    if (root.mode === "shell") return "SHELL"
     return "APP"
   }
 
@@ -707,6 +780,7 @@ Scope {
     if (root.mode === "youtube") return "Search YouTube..."
     if (root.mode === "web") return "Type code to open..."
     if (root.mode === "capture") return "<url> <code>..."
+    if (root.mode === "shell") return "Search commands..."
     return "Search apps..."
   }
 
@@ -852,6 +926,12 @@ Scope {
                         var capCode = text.slice(lastSpace + 1).trim()
                         if (capUrl.length > 0 && capCode.length > 0)
                           root.saveCapture(capCode, capUrl)
+                      }
+                    } else if (root.mode === "shell") {
+                      var sel = root.results[root.selectedIndex]
+                      if (sel && sel.type === "shell") {
+                        Quickshell.execDetached(["kitty", "-e", "/bin/sh", "-c", sel.command])
+                        root.open = false
                       }
                     } else {
                       root.launch(root.results[root.selectedIndex])
@@ -1031,7 +1111,7 @@ Scope {
             currentIndex: root.selectedIndex
             boundsBehavior: Flickable.StopAtBounds
             interactive: true
-            visible: root.mode === "app" || root.mode === "file" || root.mode === "youtube"
+            visible: root.mode === "app" || root.mode === "file" || root.mode === "youtube" || root.mode === "shell"
 
             delegate: Item {
               id: row
@@ -1042,6 +1122,7 @@ Scope {
               readonly property bool isSelected: index === root.selectedIndex
               readonly property bool isApp: row.modelData.type === "app"
               readonly property bool isYt: row.modelData.type === "youtube"
+              readonly property bool isShell: row.modelData.type === "shell"
 
               Rectangle {
                 anchors.fill: parent
@@ -1121,31 +1202,56 @@ Scope {
                 }
               }
 
+              // Shell icon
+              Item {
+                x: 16
+                width: 32
+                height: 32
+                anchors.verticalCenter: parent.verticalCenter
+                visible: isShell
+
+                Rectangle {
+                  anchors.fill: parent
+                  radius: 6
+                  color: Qt.rgba(0.29,0.87,0.5,0.15)
+
+                  Text {
+                    anchors.centerIn: parent
+                    text: "$"
+                    color: "#4ade80"
+                    font.pixelSize: 16
+                    font.weight: Font.Bold
+                  }
+                }
+              }
+
               Column {
-                x: isApp ? 54 : (isYt ? 54 : 22)
+                x: isApp ? 54 : (isYt ? 54 : (isShell ? 54 : 22))
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
 
                 Text {
-                  text: row.modelData.name
+                  text: isShell ? row.modelData.code : row.modelData.name
                   color: row.isSelected ? root.textPrimary : root.textPrimary
                   font.pixelSize: 14
                   font.weight: Font.Normal
                   elide: Text.ElideRight
-                  width: isApp ? 340 : (isYt ? 380 : 420)
+                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : 420))
                   opacity: row.isSelected ? 1.0 : 0.85
                 }
 
                 Text {
                   text: isApp
                     ? (row.modelData.comment || row.modelData.categories || "")
-                    : isYt
-                      ? (row.modelData.author + "  \u00B7  " + row.modelData.duration)
-                      : row.modelData.dir + (row.modelData.ext ? "  \u00B7  " + row.modelData.ext : "")
-                  color: isApp ? root.textSecondary : (isYt ? "#ff4444" : "#eaff00")
+                    : isShell
+                      ? row.modelData.command
+                      : isYt
+                        ? (row.modelData.author + "  \u00B7  " + row.modelData.duration)
+                        : row.modelData.dir + (row.modelData.ext ? "  \u00B7  " + row.modelData.ext : "")
+                  color: isApp ? root.textSecondary : (isShell ? "#4ade80" : (isYt ? "#ff4444" : "#eaff00"))
                   font.pixelSize: 11
                   elide: Text.ElideRight
-                  width: isApp ? 340 : (isYt ? 380 : 420)
+                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : 420))
                   opacity: 0.7
                 }
               }

@@ -1,6 +1,7 @@
 secrets.json
 aliases.json
 captures.json
+commands.json
 node_modules/
 Spotlight.qml.bak
 yt-search
