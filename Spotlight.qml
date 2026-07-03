@@ -123,6 +123,7 @@ Scope {
     else if (raw.length >= 3 && raw.slice(0, 3) === "/w ") { newMode = "web"; stripped = raw.slice(3) }
     else if (raw.length >= 5 && raw.slice(0, 5) === "/cap ") { newMode = "capture"; stripped = raw.slice(5) }
     else if (raw.length >= 4 && raw.slice(0, 4) === "/sh ") { newMode = "shell"; stripped = raw.slice(4) }
+    else if (raw.length >= 4 && raw.slice(0, 4) === "/sc ") { newMode = "shellcap"; stripped = raw.slice(4) }
 
     if (newMode !== "") {
       if (root.mode !== newMode) {
@@ -170,7 +171,7 @@ Scope {
         searchTimer.stop()
       return
     }
-    if (root.mode === "answer" || root.mode === "google" || root.mode === "web" || root.mode === "capture" || root.mode === "shell") {
+    if (root.mode === "answer" || root.mode === "google" || root.mode === "web" || root.mode === "capture" || root.mode === "shell" || root.mode === "shellcap") {
       root.searchQuery = raw
       return
     }
@@ -370,6 +371,11 @@ Scope {
     stderr: StdioCollector {}
   }
 
+  Process {
+    id: commandSaveProc
+    stderr: StdioCollector {}
+  }
+
   function loadApps() {
     appScanProc.running = false
     appScanProc.command = ["python3", "-c",
@@ -549,6 +555,25 @@ Scope {
 
   function resolveCapture(code) {
     return root.captures[code.trim().toLowerCase()] || ""
+  }
+
+  function saveCommand(code, command) {
+    var c = code.trim().toLowerCase()
+    if (c.length < 1 || !command || command.trim().length < 1) return
+    root.commands[c] = command.trim()
+    root.captureFeedbackText = "Shell saved! :" + c + " \u2192 " + command.trim()
+    root.captureSavedFeedback = true
+    captureFeedbackTimer.restart()
+    writeCommands()
+  }
+
+  function writeCommands() {
+    commandSaveProc.running = false
+    var json = JSON.stringify(root.commands)
+    commandSaveProc.command = ["sh", "-c",
+      "mkdir -p \"$(dirname \"" + root.commandsPath + "\")\" && " +
+      "echo '" + json + "' > \"" + root.commandsPath + "\""]
+    commandSaveProc.running = true
   }
 
   function resolveAlias(alias) {
@@ -770,6 +795,7 @@ Scope {
     if (root.mode === "web") return "WEB"
     if (root.mode === "capture") return "CAP"
     if (root.mode === "shell") return "SHELL"
+    if (root.mode === "shellcap") return "SC"
     return "APP"
   }
 
@@ -781,6 +807,7 @@ Scope {
     if (root.mode === "web") return "Type code to open..."
     if (root.mode === "capture") return "<url> <code>..."
     if (root.mode === "shell") return "Search commands..."
+    if (root.mode === "shellcap") return "<command> <code>..."
     return "Search apps..."
   }
 
@@ -918,14 +945,16 @@ Scope {
                         Qt.openUrlExternally(url)
                         root.open = false
                       }
-                    } else if (root.mode === "capture") {
+                    } else if (root.mode === "capture" || root.mode === "shellcap") {
                       var text = root.searchQuery.trim()
                       var lastSpace = text.lastIndexOf(" ")
                       if (lastSpace > 0) {
-                        var capUrl = text.slice(0, lastSpace).trim()
-                        var capCode = text.slice(lastSpace + 1).trim()
-                        if (capUrl.length > 0 && capCode.length > 0)
-                          root.saveCapture(capCode, capUrl)
+                        var first = text.slice(0, lastSpace).trim()
+                        var code = text.slice(lastSpace + 1).trim()
+                        if (root.mode === "capture" && first.length > 0 && code.length > 0)
+                          root.saveCapture(code, first)
+                        else if (root.mode === "shellcap" && first.length > 0 && code.length > 0)
+                          root.saveCommand(code, first)
                       }
                     } else if (root.mode === "shell") {
                       var sel = root.results[root.selectedIndex]
