@@ -105,6 +105,67 @@ Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.). Captures are stor
 
 In AI answer mode, code blocks in responses have individual **copy** buttons — click to copy that block to clipboard via `wl-copy`.
 
+## Uninstall
+
+```bash
+# Stop and disable service
+systemctl --user stop notlight.service
+systemctl --user disable notlight.service
+rm -f ~/.config/systemd/user/notlight.service
+systemctl --user daemon-reload
+
+# Remove data (captures, commands, aliases, API key)
+rm -rf ~/.config/quickshell/spotlight
+
+# Remove repo (if installed via git clone)
+# rm -rf /path/to/notlight
+```
+
+## Configuration Files
+
+All data is stored in `~/.config/quickshell/spotlight/`:
+
+| File | Purpose |
+|------|---------|
+| `secrets.json` | Groq API key (`{"groq_key": "gsk_..."}`) |
+| `captures.json` | Saved URLs from `/cap` mode |
+| `commands.json` | Saved shell commands from `/sc` mode |
+| `aliases.json` | App aliases set via right-click |
+
+These files are auto-created on first use — no manual setup required.
+
+## Changing the Toggle Keybinding
+
+Edit your Hyprland config (`~/.config/hypr/hyprland.conf`) and change the bind:
+
+```conf
+# Default: Alt+Space
+bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
+
+# Example: Super+Space instead
+# bind = SUPER, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
+```
+
+Then reload: `hyprctl reload`
+
+## Modes at a Glance
+
+Type these prefixes in the search bar to switch modes:
+
+| Prefix | Mode | What it does |
+|--------|------|-------------|
+| *(none)* | App | Launch installed apps |
+| `/f` | File | Search files via `fd` |
+| `/s` | AI | Ask Groq AI anything |
+| `/g` | Google | Search in browser |
+| `/yt` | YouTube | Search videos inline |
+| `/w` | Web | Open a saved URL |
+| `/cap` | Capture | Save a URL with a short name |
+| `/sh` | Shell | Launch a saved command |
+| `/sc` | Shell capture | Save a terminal command |
+
+Type `\f`, `\s`, etc. if `/` conflicts with your keyboard layout.
+
 ## Architecture
 
 notlight runs as a **systemd user service** (daemonized). The toggle script uses `qs ipc` to show/hide the panel without restarting the process, keeping startup instant. On first launch after boot, systemd starts the service automatically.
