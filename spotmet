@@ -1,21 +1,22 @@
-notlight — Metrics Report
-=========================
+notlight — Metrics Report (post-audit)
+=======================================
 
 PROJECT SIZE
-  Total:          4.8M
-  Source files:   1.5K lines across 4 files
-  Spotlight.qml:  1,334 lines (43K)
+  Source files:   1,661 lines across 5 files
+  Spotlight.qml:  1,484 lines (56K)
   yt-search.cpp:  151 lines (4.2K)
   shell.qml:      10 lines
-  toggle-spotlight: 10 lines
+  toggle-spotlight: 16 lines
+  yt-search.js:   10 lines
+  Package JSON:   5 files, ~13K total
 
 BINARY FOOTPRINT
   yt-search:      196K (ELF 64-bit, dynamically linked, not stripped)
   Language:       C++17, compiled with g++ + libcurl + nlohmann/json
 
 RUNTIME RESOURCES
-  Process:        1 quickshell instance (spotlight shell)
-  RSS:            356 MB (quickshell's total — includes Qt/QML runtime)
+  Process:        1 quickshell instance (spotlight shell via systemd user service)
+  RSS:            106 MB (quickshell's total — includes Qt/QML runtime)
   CPU:            ~0.2% idle (negligible when not searching)
   Disk (data):    103B aliases.json, 121B captures.json, 72B secrets.json
 
@@ -26,47 +27,47 @@ PERFORMANCE — App Search (default mode)
 
 PERFORMANCE — File Search (/f)
   Engine:         fd (Rust)
-  Debounce:       120ms
-  Typical query:  0.01–0.05s (fd is instant)
+  Debounce:       250ms (was 120ms — avoids overlapping fd processes)
+  Typical query:  0.01–0.05s
   Results:        Top 30, sorted by prefix match + name length
-  Parser:         Shell script with extension-based categorization (no file --mime-type)
+  Exclusions:     .cache, .git, .cargo, .rustup, .npm, .gradle, .mozilla,
+                  .var, node_modules, gtk-icons, .local/straight, go/pkg,
+                  yay, quickshell-shells
 
 PERFORMANCE — AI Answer (/s)
   Engine:         Groq API (llama-3.3-70b-versatile) via XMLHttpRequest
-  Latency:        0.3–2s (depends on Groq server, not local)
-  Local cost:     Zero CPU — network-bound
+  Latency:        0.3–2s (network-bound)
   Key storage:    secrets.json (~72B)
 
 PERFORMANCE — YouTube Search (/yt)
   Engine:         Compiled C++ binary (yt-search), libcurl + nlohmann/json
   CPU time:       0.05s user, 0.02s system
-  Wall time:      ~5s (network-bound, YouTube API response time)
+  Wall time:      ~5s (network-bound)
   Binary size:    196K
-  Node avoidance: Eliminated 50MB+ node_modules dependency
 
 PERFORMANCE — Google Search (/g)
-  Engine:         Qt.openUrlExternally
-  Latency:        Zero local — just opens browser
+  Engine:         Qt.openUrlExternally — zero local cost
 
-PERFORMANCE — Web Mode (/w)
-  Engine:         In-memory JS object lookup (captures.json loaded on open)
-  Latency:        Instant (<1ms)
+PERFORMANCE — Web Mode (/w) & Shell Mode (/sh)
+  Engine:         In-memory JS object lookup — instant (<1ms)
 
-PERFORMANCE — Capture Mode (/cap)
-  Engine:         JS string split + JSON write to captures.json
-  Latency:        <1ms (write is async via Process)
+SECURITY
+  Shell injection: Fixed — write functions use python3 -c with argv instead of
+                   shell string interpolation
 
-ARCHITECTURE NOTES
-  - No Python overhead at search time: app scan runs once, all search is
-    JS-side filtering or native binary calls
-  - No database dependencies: uses flat JSON files (~100B each)
-  - Minimal shell piping: only fd results are piped through a shell script
-    (all other operations use direct QML/JS/Process calls)
-  - C++ binary for YouTube search avoids Node.js startup penalty
-    (~0.04s CPU vs ~0.3s for Node.js)
+ARCHITECTURE
+  Lifecycle:      systemd user service (auto-start, auto-restart)
+  Toggle IPC:     qs ipc call spotlight toggle (retries with systemctl --user start)
+  On-close:       Daemon stays alive (~2MB RSS overhead vs cold launch)
+  Memory saved:   ~22MB vs old --daemonize instance (106MB vs 228MB for stale proc)
 
-MEMORY BREAKDOWN
-  quickshell daemon:  356 MB RSS (includes Qt GUI, QML engine, JS runtime)
-  Spotlight QML:      ~2-5 MB of that (QML objects, JS arrays, cached apps)
-  yt-search binary:   196K on disk, ~2 MB RSS during execution (ephemeral)
-  Data files:         <1 KB total (secrets, aliases, captures)
+AUDIT CHANGES APPLIED (July 2026)
+  #1  O(n²) → O(1) aliasById reverse map
+  #2  Removed duplicate filterApps call per keystroke
+  #3  searchTimer debounce 120ms → 250/400ms
+  #4  Load guards for aliases/captures/commands (one-time load)
+  #5  Shell injection fix in writeAliases/writeCaptures/writeCommands/saveGroqKey
+  #6  __import__('re') → import re at top of loadApps script
+  #7  Canvas → static SVG Image (no runtime repaints)
+  #8  fd exclusions for noisy directories
+  Arch Reverted:  On-demand launch was flaky — reverted to systemd daemon

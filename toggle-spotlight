@@ -1,11 +1,17 @@
 #!/bin/bash
-# Toggle the QuickShell Spotlight overlay
-# Bind this to Super+S in Hyprland
+# Toggle notlight (Spotlight overlay)
 
 CONFIG="spotlight"
 
-if ! qs ipc --config "$CONFIG" call spotlight toggle 2>/dev/null; then
-  quickshell --config "$CONFIG" --daemonize
-  sleep 0.3
-  qs ipc --config "$CONFIG" call spotlight toggle
+if qs ipc --config "$CONFIG" call spotlight toggle 2>/dev/null; then
+  exit 0
 fi
+
+systemctl --user start notlight
+
+for i in 1 2 3 4 5; do
+  if qs ipc --config "$CONFIG" call spotlight show 2>/dev/null; then
+    exit 0
+  fi
+  sleep 0.15
+done

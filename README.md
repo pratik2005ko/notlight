@@ -6,7 +6,7 @@ A multi-mode launcher for Hyprland built with [Quickshell](https://github.com/Qu
 
 - **App search** (default mode) — instant filtering of installed applications by name, comment, or categories
 - **File search** (`/f query`) — fast file search via `fd`, categorized by extension (video, audio, image, doc, directory, etc.)
-- **AI answer** (`/s query`) — ask Groq AI for natural-language answers (Enter to trigger)
+- **AI answer** (`/s query`) — ask Groq AI for natural-language answers with syntax-highlighted code blocks and per-block copy buttons
 - **Google search** (`/g query`) — open search query in browser (Enter to trigger)
 - **YouTube inline search** (`/yt query`) — search videos inline, preview results with duration, launch in browser on Enter
 - **Web mode** (`/w code`) — open a saved URL by its short name
@@ -16,27 +16,64 @@ A multi-mode launcher for Hyprland built with [Quickshell](https://github.com/Qu
 - **Alias system** — right-click an app result to set/remove a custom alias (boosts to top of search results)
 - **macOS-style spring animation** — centered panel with scale bounce on open/close
 
-## Dependencies
+## Quick Install
+
+```bash
+git clone https://github.com/pratik2005ko/notlight.git
+cd notlight
+chmod +x install.sh && ./install.sh
+```
+
+## Manual Install
+
+### Dependencies
 
 - [Quickshell](https://github.com/Quickshell/Quickshell)
 - `fd` — file search (`/f`)
 - `kitty` — terminal for terminal apps and directory browser (yazi)
 - `mpv` — video/audio playback
 - `yazi` — directory file browser
+- `wl-copy` — clipboard copy for code blocks
 - `libcurl` + `nlohmann-json` — YouTube search (compiled binary)
 
-## Installation
+### Steps
 
 ```bash
 git clone https://github.com/pratik2005ko/notlight.git
 cd notlight
-# Compile YouTube search binary
 g++ -std=c++17 yt-search.cpp -o yt-search -lcurl
+ln -sf "$PWD" ~/.config/quickshell/spotlight
 ```
 
-Link to Quickshell config:
+### Systemd Service (auto-start)
+
 ```bash
-ln -sf "$PWD" ~/.config/quickshell/spotlight
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/notlight.service << 'EOF'
+[Unit]
+Description=notlight — Multi-mode launcher
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=qs -c spotlight
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload
+systemctl --user enable --now notlight.service
+```
+
+### Keybinding
+
+Add to your Hyprland config:
+
+```conf
+bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
 ```
 
 ## Configuration
@@ -48,14 +85,6 @@ On first use in `/s` mode, the UI will prompt you to enter your Groq API key. Yo
 ```json
 # ~/.config/quickshell/spotlight/secrets.json
 {"groq_key": "gsk_your_key_here"}
-```
-
-### Keybinding
-
-Add to your Hyprland config:
-
-```conf
-bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
 ```
 
 ## Usage
@@ -73,6 +102,12 @@ bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
 | `/sc` | Shell capture | Save a terminal command with a short code name (Enter to save) |
 
 Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.). Captures are stored in `~/.config/quickshell/spotlight/captures.json`. Shell commands are stored in `~/.config/quickshell/spotlight/commands.json`.
+
+In AI answer mode, code blocks in responses have individual **copy** buttons — click to copy that block to clipboard via `wl-copy`.
+
+## Architecture
+
+notlight runs as a **systemd user service** (daemonized). The toggle script uses `qs ipc` to show/hide the panel without restarting the process, keeping startup instant. On first launch after boot, systemd starts the service automatically.
 
 ## License
 

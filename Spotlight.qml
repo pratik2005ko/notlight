@@ -30,6 +30,7 @@ Scope {
 
   property string answerTitle: ""
   property string answerText: ""
+  property var answerSegments: []
   property string answerUrl: ""
   property string answerSource: ""
   property string groqKey: ""
@@ -40,8 +41,12 @@ Scope {
 
   property var apps: []
   property var appAliases: ({})
+  property var aliasById: ({})
   property string aliasesPath: home + "/.config/quickshell/spotlight/aliases.json"
   property bool appsLoaded: false
+  property bool aliasesLoaded: false
+  property bool capturesLoaded: false
+  property bool commandsLoaded: false
   property string aliasInputDesktopId: ""
   property string aliasInputText: ""
   property bool aliasSavedFeedback: false
@@ -62,7 +67,7 @@ Scope {
     dir:    { label: "DIR",    color: "#94a3b8" },
     other:  { label: "FILE",   color: "#64748b" },
     app:    { label: "APP",    color: "#f472b6" },
-    youtube: { label: "YT",    color: "#ff0000" },
+    youtube: { label: "YT",    color: "#a78bfa" },
     shell:  { label: "SHELL", color: "#4ade80" },
   })
 
@@ -88,9 +93,12 @@ Scope {
       searchInput.forceActiveFocus()
       if (!root.appsLoaded)
         root.loadApps()
-      root.loadAliases()
-      root.loadCaptures()
-      root.loadCommands()
+      if (!root.aliasesLoaded)
+        root.loadAliases()
+      if (!root.capturesLoaded)
+        root.loadCaptures()
+      if (!root.commandsLoaded)
+        root.loadCommands()
       root.loadSecrets()
     }
   }
@@ -178,10 +186,9 @@ Scope {
 
     // Default: app mode
     root.mode = "app"
-    root.searchQuery = raw
     root.answerTitle = ""
     root.answerText = ""
-    root.results = root.filterApps(raw)
+    root.searchQuery = raw
     searchTimer.stop()
   }
 
@@ -195,7 +202,7 @@ Scope {
 
   Timer {
     id: searchTimer
-    interval: 120
+    interval: root.mode === "youtube" ? 400 : 250
     onTriggered: {
       if (root.mode === "file")
         root.runSearch()
@@ -326,6 +333,8 @@ Scope {
         } catch (e) {
           root.appAliases = ({})
         }
+        root.aliasesLoaded = true
+        root.rebuildAliasById()
       }
     }
     stderr: StdioCollector {}
@@ -346,6 +355,7 @@ Scope {
         } catch (e) {
           root.captures = ({})
         }
+        root.capturesLoaded = true
       }
     }
     stderr: StdioCollector {}
@@ -366,6 +376,7 @@ Scope {
         } catch (e) {
           root.commands = ({})
         }
+        root.commandsLoaded = true
       }
     }
     stderr: StdioCollector {}
@@ -379,7 +390,7 @@ Scope {
   function loadApps() {
     appScanProc.running = false
     appScanProc.command = ["python3", "-c",
-      "import os, json\n" +
+      "import os, json, re\n" +
       "dirs = [os.path.expanduser('~/.local/share/applications'),\n" +
       "  '/usr/share/applications', '/usr/local/share/applications',\n" +
       "  '/var/lib/flatpak/exports/share/applications',\n" +
@@ -434,7 +445,7 @@ Scope {
       "        elif k == 'Categories': entry['categories'] = v\n" +
       "        elif k == 'Terminal': entry['terminal'] = v == 'true'\n" +
       "      if skip or not entry['name'] or not entry['exec']: continue\n" +
-      "      entry['exec'] = __import__('re').sub(r'%[fFuUdDnNickvm]', '', entry['exec'].replace('%%', '\\x00')).replace('\\x00', '%').strip()\n" +
+      "      entry['exec'] = re.sub(r'%[fFuUdDnNickvm]', '', entry['exec'].replace('%%', '\\x00')).replace('\\x00', '%').strip()\n" +
       "      entry['iconPath'] = resolve_icon(entry['icon'])\n" +
       "      result.append(entry)\n" +
       "    except: pass\n" +
@@ -506,6 +517,7 @@ Scope {
     root.appAliases[al] = desktopId
     root.aliasSavedFeedback = true
     feedbackTimer.restart()
+    root.rebuildAliasById()
     writeAliases()
   }
 
@@ -513,6 +525,7 @@ Scope {
     var al = alias.trim().toLowerCase()
     if (root.appAliases[al]) {
       delete root.appAliases[al]
+      root.rebuildAliasById()
       writeAliases()
     }
   }
@@ -520,9 +533,12 @@ Scope {
   function writeAliases() {
     aliasSaveProc.running = false
     var json = JSON.stringify(root.appAliases)
-    aliasSaveProc.command = ["sh", "-c",
-      "mkdir -p \"$(dirname \"" + root.aliasesPath + "\")\" && " +
-      "echo '" + json + "' > \"" + root.aliasesPath + "\""]
+    aliasSaveProc.command = [
+      "python3", "-c",
+      "import sys, os; p=sys.argv[1]; os.makedirs(os.path.dirname(p), exist_ok=True); open(p,'w').write(sys.argv[2])",
+      root.aliasesPath,
+      json
+    ]
     aliasSaveProc.running = true
   }
 
@@ -547,9 +563,12 @@ Scope {
   function writeCaptures() {
     captureSaveProc.running = false
     var json = JSON.stringify(root.captures)
-    captureSaveProc.command = ["sh", "-c",
-      "mkdir -p \"$(dirname \"" + root.capturesPath + "\")\" && " +
-      "echo '" + json + "' > \"" + root.capturesPath + "\""]
+    captureSaveProc.command = [
+      "python3", "-c",
+      "import sys, os; p=sys.argv[1]; os.makedirs(os.path.dirname(p), exist_ok=True); open(p,'w').write(sys.argv[2])",
+      root.capturesPath,
+      json
+    ]
     captureSaveProc.running = true
   }
 
@@ -570,9 +589,12 @@ Scope {
   function writeCommands() {
     commandSaveProc.running = false
     var json = JSON.stringify(root.commands)
-    commandSaveProc.command = ["sh", "-c",
-      "mkdir -p \"$(dirname \"" + root.commandsPath + "\")\" && " +
-      "echo '" + json + "' > \"" + root.commandsPath + "\""]
+    commandSaveProc.command = [
+      "python3", "-c",
+      "import sys, os; p=sys.argv[1]; os.makedirs(os.path.dirname(p), exist_ok=True); open(p,'w').write(sys.argv[2])",
+      root.commandsPath,
+      json
+    ]
     commandSaveProc.running = true
   }
 
@@ -581,10 +603,14 @@ Scope {
   }
 
   function aliasForDesktopId(desktopId) {
-    for (var key in root.appAliases) {
-      if (root.appAliases[key] === desktopId) return key
-    }
-    return ""
+    return root.aliasById[desktopId] || ""
+  }
+
+  function rebuildAliasById() {
+    var rev = {}
+    for (var key in root.appAliases)
+      rev[root.appAliases[key]] = key
+    root.aliasById = rev
   }
 
   function filterApps(q) {
@@ -651,11 +677,37 @@ Scope {
     root.groqKeyInput = ""
     var json = JSON.stringify({"groq_key": key})
     secretSaveProc.running = false
-    secretSaveProc.command = ["sh", "-c",
-      "mkdir -p \"$(dirname \"" + root.secretsPath + "\")\" && " +
-      "echo '" + json + "' > \"" + root.secretsPath + "\""]
+    secretSaveProc.command = [
+      "python3", "-c",
+      "import sys, os; p=sys.argv[1]; os.makedirs(os.path.dirname(p), exist_ok=True); open(p,'w').write(sys.argv[2])",
+      root.secretsPath,
+      json
+    ]
     secretSaveProc.running = true
   }
+
+  function parseAnswer(text) {
+    if (!text) return []
+    var segments = []
+    var pattern = /```(\w+)?\s*\n?([\s\S]*?)```/g
+    var lastIndex = 0
+    var match
+    while ((match = pattern.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        var t = text.slice(lastIndex, match.index).trim()
+        if (t) segments.push({type: "text", content: t})
+      }
+      segments.push({type: "code", lang: match[1] || "", content: match[2].trim()})
+      lastIndex = match.index + match[0].length
+    }
+    if (lastIndex < text.length) {
+      var remaining = text.slice(lastIndex).trim()
+      if (remaining) segments.push({type: "text", content: remaining})
+    }
+    return segments
+  }
+
+  onAnswerTextChanged: root.answerSegments = root.parseAnswer(root.answerText)
 
   function runWebSearch() {
     var q = root.searchQuery.trim()
@@ -693,17 +745,18 @@ Scope {
     xhr.send(JSON.stringify({
       model: "llama-3.3-70b-versatile",
       messages: [
-        {role: "system", content: "Answer concisely in 1-2 sentences. No markdown, no formatting, just plain text."},
+        {role: "system", content: "Give clear helpful answers. Use markdown formatting. For commands, show them in code blocks with language labels (like ```bash or ```python) so they are ready to copy. Keep answers concise but complete."},
         {role: "user", content: q}
       ],
       temperature: 0.3,
-      max_tokens: 200
+      max_tokens: 800
     }))
   }
 
   readonly property string searchScript:
     'q=$1; fd --hidden --no-ignore --type f --type d -a ' +
     '-E .cache -E .git -E .cargo -E .rustup -E .npm -E .gradle -E .mozilla -E .var -E node_modules ' +
+    '-E gtk-icons -E ".local/straight" -E "go/pkg" -E yay -E quickshell-shells ' +
     '-c never -- "$q" "$HOME" 2>/dev/null | ' +
     'head -50 | while IFS= read -r p; do ' +
     '  if [ -d "$p" ]; then printf "dir\t%s\\n" "$p"; ' +
@@ -831,9 +884,9 @@ Scope {
     Item {
       id: panel
       width: 640
-      height: root.mode === "answer" ? Math.min(panelContent.implicitHeight, 800) : Math.min(panelContent.implicitHeight, 660)
+      height: Math.min(panelContent.implicitHeight, root.mode === "answer" ? parent.height - 80 : 660)
       anchors.horizontalCenter: parent.horizontalCenter
-      y: Math.round((parent.height - searchBarItem.height) / 2)
+      y: Math.round((parent.height - panel.height) / 2)
 
       opacity: root.open ? 1 : 0
       scale: root.open ? 1 : 0.85
@@ -871,32 +924,18 @@ Scope {
             width: parent.width
             height: 60
 
-            Canvas {
+            Image {
               x: 20
               anchors.verticalCenter: parent.verticalCenter
               width: 22
               height: 22
-              antialiasing: true
-
-              onPaint: {
-                var ctx = getContext("2d")
-                ctx.reset()
-                ctx.strokeStyle = root.textSecondary
-                ctx.lineWidth = 2
-                ctx.beginPath()
-                ctx.arc(10, 10, 7, 0, Math.PI * 2)
-                ctx.stroke()
-                ctx.beginPath()
-                ctx.moveTo(15.5, 15.5)
-                ctx.lineTo(21, 21)
-                ctx.stroke()
-              }
+              source: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='10' cy='10' r='7' fill='none' stroke='%23666666' stroke-width='2'/%3E%3Cline x1='15.5' y1='15.5' x2='21' y2='21' stroke='%23666666' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"
             }
 
             TextInput {
               id: searchInput
               x: 54
-              width: parent.width - 72
+              width: parent.width - 118 - modeLabel.width
               anchors.verticalCenter: parent.verticalCenter
               color: root.textPrimary
               font.pixelSize: 22
@@ -982,9 +1021,9 @@ Scope {
 
             Rectangle {
               anchors { right: parent.right; rightMargin: 40; verticalCenter: parent.verticalCenter }
-              width: modeLabel.width + 14
-              height: 20
-              radius: 4
+              width: modeLabel.width + 20
+              height: 22
+              radius: 11
               color: Qt.rgba(0.65,0.42,1,0.12)
               border.width: 1
               border.color: Qt.rgba(0.65,0.42,1,0.35)
@@ -1006,6 +1045,13 @@ Scope {
             height: root.mode === "answer" && root.answerText.length > 0 ? answerLayout.height + 16 : 0
             visible: root.mode === "answer" && root.answerText.length > 0
 
+            MouseArea {
+              anchors.fill: parent
+              cursorShape: Qt.PointingHandCursor
+              onClicked: root.open = false
+              z: -1
+            }
+
             Column {
               id: answerLayout
               x: 14
@@ -1023,29 +1069,131 @@ Scope {
                 visible: root.answerTitle.length > 0
               }
 
-              Text {
-                text: root.answerText
-                color: root.textPrimary
-                font.pixelSize: 13
-                wrapMode: Text.Wrap
-                width: parent.width
-                lineHeight: 1.4
+              Repeater {
+                id: answerRepeater
+                model: root.answerSegments
+                delegate: Item {
+                  required property var modelData
+                  required property int index
+                  width: answerLayout.width
+                  height: modelData.type === "code" ? codeBlock.height + 8 : textBlock.height + 4
+
+                  Text {
+                    id: textBlock
+                    visible: modelData.type === "text"
+                    text: modelData.content
+                    color: root.textPrimary
+                    font.pixelSize: 13
+                    wrapMode: Text.Wrap
+                    width: parent.width
+                    lineHeight: 1.4
+                    textFormat: Text.MarkdownText
+                  }
+
+                  Rectangle {
+                    id: codeBlock
+                    visible: modelData.type === "code"
+                    width: parent.width
+                    height: codeText.height + 40
+                    radius: 8
+                    color: "#1a1a1a"
+                    border.width: 1
+                    border.color: "#2a2a2a"
+
+                    Rectangle {
+                      anchors { top: parent.top; right: parent.right; topMargin: 4; rightMargin: 4 }
+                      width: langLabel.width + 14
+                      height: 22
+                      radius: 11
+                      color: Qt.rgba(0.29,0.87,0.5,0.15)
+
+                      Text {
+                        id: langLabel
+                        anchors.centerIn: parent
+                        text: modelData.lang || "sh"
+                        color: "#4ade80"
+                        font.pixelSize: 9
+                        font.weight: Font.Medium
+                      }
+                    }
+
+                    Rectangle {
+                      id: codeCopyBtn
+                      anchors { top: parent.top; right: parent.right; topMargin: 4; rightMargin: langLabel.width + 24 }
+                      width: copyLabel.width + 16
+                      height: 22
+                      radius: 11
+                      color: codeCopyArea.containsMouse ? Qt.rgba(0.29,0.87,0.5,0.25) : Qt.rgba(0.29,0.87,0.5,0.12)
+                      border.width: 1
+                      border.color: codeCopyArea.containsMouse ? Qt.rgba(0.29,0.87,0.5,0.5) : Qt.rgba(0.29,0.87,0.5,0.25)
+
+                      Text {
+                        id: copyLabel
+                        anchors.centerIn: parent
+                        text: codeBlockItem.copied ? "copied!" : "copy"
+                        color: codeBlockItem.copied ? "#4ade80" : Qt.rgba(0.29,0.87,0.5,0.8)
+                        font.pixelSize: 9
+                        font.weight: Font.Medium
+                        font.letterSpacing: 0.5
+                      }
+
+                      MouseArea {
+                        id: codeCopyArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                          Quickshell.execDetached(["wl-copy", "--", codeBlockItem.copyContent])
+                          codeBlockItem.copied = true
+                          codeCopyTimer.restart()
+                        }
+                      }
+                    }
+
+                    Text {
+                      id: codeText
+                      x: 10
+                      y: 32
+                      width: parent.width - 20
+                      text: modelData.content
+                      color: "#e5e5e5"
+                      font.family: "monospace"
+                      font.pixelSize: 12
+                      wrapMode: Text.Wrap
+                    }
+
+                    QtObject {
+                      id: codeBlockItem
+                      property string copyContent: modelData.content
+                      property bool copied: false
+                    }
+
+                    Timer {
+                      id: codeCopyTimer
+                      interval: 1500
+                      onTriggered: codeBlockItem.copied = false
+                    }
+                  }
+                }
               }
 
-              Text {
-                text: root.answerSource.length > 0 ? "Source: " + root.answerSource : ""
-                color: root.textSecondary
-                font.pixelSize: 11
+              Item {
+                id: sourceRow
                 width: parent.width
+                height: sourceText.height
                 visible: root.answerSource.length > 0
+
+                Text {
+                  id: sourceText
+                  text: "Source: " + root.answerSource
+                  color: root.textSecondary
+                  font.pixelSize: 11
+                  width: parent.width
+                  elide: Text.ElideRight
+                }
               }
             }
 
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.open = false
-            }
           }
 
           Item {
@@ -1220,12 +1368,12 @@ Scope {
                 Rectangle {
                   anchors.fill: parent
                   radius: 6
-                  color: Qt.rgba(1,0,0,0.15)
+                  color: Qt.rgba(0.65,0.42,1,0.15)
 
                   Text {
                     anchors.centerIn: parent
                     text: "\u25B6"
-                    color: "#ff0000"
+                    color: "#a78bfa"
                     font.pixelSize: 14
                   }
                 }
@@ -1300,14 +1448,14 @@ Scope {
               // Type pill
               Rectangle {
                 anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                width: catLabel.width + 14
-                height: 20
-                radius: 4
+                width: catLabel.width + 18
+                height: 22
+                radius: 11
                 color: Qt.rgba(1,1,1,0.06)
 
                 Rectangle {
                   anchors.fill: parent
-                  radius: 4
+                  radius: 11
                   color: row.modelData.info.color
                   opacity: 0.2
                 }
