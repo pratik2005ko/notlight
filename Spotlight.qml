@@ -776,7 +776,6 @@ Scope {
     var q = root.searchQuery.trim()
     if (q.length < 1) { root.results = []; return }
     root.searching = true
-    root.results = []
     var binPath = root.home + "/active projects c/spotlight/yt-search"
     ytSearchProc.running = false
     ytSearchProc.command = [binPath, q]

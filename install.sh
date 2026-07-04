@@ -30,7 +30,7 @@ fi
 # 2. Compile YouTube search binary
 if [ -f "$REPO_DIR/yt-search.cpp" ]; then
   echo "==> Compiling yt-search..."
-  g++ -std=c++17 "$REPO_DIR/yt-search.cpp" -o "$REPO_DIR/yt-search" -lcurl
+  g++ -std=c++17 -O2 -s "$REPO_DIR/yt-search.cpp" -o "$REPO_DIR/yt-search" -lcurl
 fi
 
 # 3. Link config
