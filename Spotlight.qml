@@ -1417,6 +1417,7 @@ Scope {
                 }
 
                 Text {
+                  id: descriptionText
                   text: isApp
                     ? (row.modelData.comment || row.modelData.categories || "")
                     : isShell
@@ -1434,7 +1435,7 @@ Scope {
 
               // Alias badge
               Text {
-                anchors { left: parent.left; leftMargin: isApp ? 54 : 22; bottom: parent.bottom; bottomMargin: 8 }
+                anchors { right: typePill.left; rightMargin: 6; verticalCenter: parent.verticalCenter }
                 text: isApp && row.modelData.alias ? ":" + row.modelData.alias : ""
                 color: "#f472b6"
                 font.pixelSize: 9
@@ -1446,6 +1447,7 @@ Scope {
 
               // Type pill
               Rectangle {
+                id: typePill
                 anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                 width: catLabel.width + 18
                 height: 22
