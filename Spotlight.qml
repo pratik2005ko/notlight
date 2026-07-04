@@ -35,14 +35,14 @@ Scope {
   property string answerSource: ""
   property string groqKey: ""
   property bool hasGroqKey: false
-  property string secretsPath: home + "/.config/quickshell/spotlight/secrets.json"
+  property string secretsPath: home + "/.config/quickshell/spotlight-data/secrets.json"
   property bool secretsLoaded: false
   property string groqKeyInput: ""
 
   property var apps: []
   property var appAliases: ({})
   property var aliasById: ({})
-  property string aliasesPath: home + "/.config/quickshell/spotlight/aliases.json"
+  property string aliasesPath: home + "/.config/quickshell/spotlight-data/aliases.json"
   property bool appsLoaded: false
   property bool aliasesLoaded: false
   property bool capturesLoaded: false
@@ -53,9 +53,9 @@ Scope {
   property bool captureSavedFeedback: false
   property string captureFeedbackText: ""
   property var captures: ({})
-  property string capturesPath: home + "/.config/quickshell/spotlight/captures.json"
+  property string capturesPath: home + "/.config/quickshell/spotlight-data/captures.json"
   property var commands: ({})
-  property string commandsPath: home + "/.config/quickshell/spotlight/commands.json"
+  property string commandsPath: home + "/.config/quickshell/spotlight-data/commands.json"
 
   readonly property string home: Quickshell.env("HOME") || ""
 

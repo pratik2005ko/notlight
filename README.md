@@ -83,7 +83,7 @@ bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
 On first use in `/s` mode, the UI will prompt you to enter your Groq API key. You can also create the file manually:
 
 ```json
-# ~/.config/quickshell/spotlight/secrets.json
+# ~/.config/quickshell/spotlight-data/secrets.json
 {"groq_key": "gsk_your_key_here"}
 ```
 
@@ -101,7 +101,7 @@ On first use in `/s` mode, the UI will prompt you to enter your Groq API key. Yo
 | `/sh` | Shell | Fuzzy search predefined terminal commands (Enter to launch in kitty) |
 | `/sc` | Shell capture | Save a terminal command with a short code name (Enter to save) |
 
-Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.). Captures are stored in `~/.config/quickshell/spotlight/captures.json`. Shell commands are stored in `~/.config/quickshell/spotlight/commands.json`.
+Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.). All data is stored in `~/.config/quickshell/spotlight-data/` (separate from the repo).
 
 In AI answer mode, code blocks in responses have individual **copy** buttons — click to copy that block to clipboard via `wl-copy`.
 
@@ -115,7 +115,8 @@ rm -f ~/.config/systemd/user/notlight.service
 systemctl --user daemon-reload
 
 # Remove data (captures, commands, aliases, API key)
-rm -rf ~/.config/quickshell/spotlight
+rm -rf ~/.config/quickshell/spotlight-data
+rm -f ~/.config/quickshell/spotlight
 
 # Remove repo (if installed via git clone)
 # rm -rf /path/to/notlight
@@ -123,7 +124,7 @@ rm -rf ~/.config/quickshell/spotlight
 
 ## Configuration Files
 
-All data is stored in `~/.config/quickshell/spotlight/`:
+All data is stored in `~/.config/quickshell/spotlight-data/` (outside the repo):
 
 | File | Purpose |
 |------|---------|
