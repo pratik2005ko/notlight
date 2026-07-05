@@ -105,6 +105,22 @@ Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.). All data is store
 
 In AI answer mode, code blocks in responses have individual **copy** buttons — click to copy that block to clipboard via `wl-copy`.
 
+## Updating
+
+```bash
+cd ~/.config/quickshell/spotlight
+git pull
+./install.sh
+```
+
+Or use the update script:
+
+```bash
+~/.config/quickshell/spotlight/update.sh
+```
+
+The script pulls the latest code and recompiles yt-search if needed. Your data files (`secrets.json`, `captures.json`, etc.) are stored separately in `~/.config/quickshell/spotlight-data/` and are never touched.
+
 ## Uninstall
 
 ```bash
