@@ -716,6 +716,11 @@ Scope {
     root.groqKey = key
     root.hasGroqKey = true
     root.groqKeyInput = ""
+    groqSetupInput.text = ""
+    root.answerText = "Groq key saved! You can now use /s mode."
+    root.answerTitle = ""
+    root.answerUrl = ""
+    root.answerSource = ""
     var json = JSON.stringify({"groq_key": key})
     secretSaveProc.running = false
     secretSaveProc.command = [
@@ -1328,6 +1333,7 @@ Scope {
               anchors.fill: parent
               cursorShape: Qt.PointingHandCursor
               onClicked: root.open = false
+              z: -1
             }
           }
 
