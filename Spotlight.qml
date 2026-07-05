@@ -69,6 +69,7 @@ Scope {
     app:    { label: "APP",    color: "#f472b6" },
     youtube: { label: "YT",    color: "#a78bfa" },
     shell:  { label: "SHELL", color: "#4ade80" },
+    web:    { label: "WEB",  color: "#60a5fa" },
   })
 
   IpcHandler {
@@ -195,6 +196,8 @@ Scope {
   onSearchQueryChanged: {
     if (root.mode === "shell") {
       root.results = root.filterShell(root.searchQuery)
+    } else if (root.mode === "web") {
+      root.results = root.filterCaptures(root.searchQuery)
     } else if (root.mode === "app" && root.searchQuery.length > 0) {
       root.results = root.filterApps(root.searchQuery)
     }
@@ -469,6 +472,44 @@ Scope {
     commandLoadProc.running = false
     commandLoadProc.command = ["sh", "-c", "cat \"" + root.commandsPath + "\" 2>/dev/null || echo '{}'"]
     commandLoadProc.running = true
+  }
+
+  function filterCaptures(q) {
+    if (q.length < 1) {
+      var all = []
+      for (var key in root.captures) {
+        all.push({
+          type: "web",
+          category: "web",
+          code: key,
+          url: root.captures[key],
+          info: root.categoryInfo["web"],
+        })
+      }
+      all.sort(function(a, b) { return a.code.localeCompare(b.code) })
+      return all.slice(0, 12)
+    }
+    var ql = q.toLowerCase()
+    var matched = []
+    for (var code in root.captures) {
+      var url = root.captures[code]
+      if (code.toLowerCase().indexOf(ql) >= 0 || url.toLowerCase().indexOf(ql) >= 0) {
+        matched.push({
+          type: "web",
+          category: "web",
+          code: code,
+          url: url,
+          info: root.categoryInfo["web"],
+        })
+      }
+    }
+    matched.sort(function(a, b) {
+      var aPre = a.code.toLowerCase().indexOf(ql) === 0 ? 0 : 1
+      var bPre = b.code.toLowerCase().indexOf(ql) === 0 ? 0 : 1
+      if (aPre !== bPre) return aPre - bPre
+      return a.code.localeCompare(b.code)
+    })
+    return matched.slice(0, 12)
   }
 
   function filterShell(q) {
@@ -977,11 +1018,23 @@ Scope {
                       if (!root.searching)
                         root.runWebSearch()
                     } else if (root.mode === "web") {
-                      var code = root.searchQuery.trim().toLowerCase()
-                      var url = root.captures[code]
-                      if (url) {
-                        Qt.openUrlExternally(url)
+                      var sel = root.results[root.selectedIndex]
+                      if (sel && sel.type === "web") {
+                        Qt.openUrlExternally(sel.url)
                         root.open = false
+                      } else {
+                        var code = root.searchQuery.trim().toLowerCase()
+                        var url = root.captures[code]
+                        if (url) {
+                          Qt.openUrlExternally(url)
+                          root.open = false
+                        } else if (code.length > 0) {
+                          root.answerText = "No URL saved for \"" + code + "\". Add one with /cap <url> <code>"
+                          root.answerTitle = ""
+                          root.answerUrl = ""
+                          root.answerSource = ""
+                          root.mode = "answer"
+                        }
                       }
                     } else if (root.mode === "capture" || root.mode === "shellcap") {
                       var text = root.searchQuery.trim()
@@ -1287,7 +1340,7 @@ Scope {
             currentIndex: root.selectedIndex
             boundsBehavior: Flickable.StopAtBounds
             interactive: true
-            visible: root.mode === "app" || root.mode === "file" || root.mode === "youtube" || root.mode === "shell"
+            visible: root.mode === "app" || root.mode === "file" || root.mode === "youtube" || root.mode === "shell" || root.mode === "web"
 
             delegate: Item {
               id: row
@@ -1299,6 +1352,7 @@ Scope {
               readonly property bool isApp: row.modelData.type === "app"
               readonly property bool isYt: row.modelData.type === "youtube"
               readonly property bool isShell: row.modelData.type === "shell"
+              readonly property bool isWeb: row.modelData.type === "web"
 
               Rectangle {
                 anchors.fill: parent
@@ -1401,18 +1455,41 @@ Scope {
                 }
               }
 
+              // Web icon
+              Item {
+                x: 16
+                width: 32
+                height: 32
+                anchors.verticalCenter: parent.verticalCenter
+                visible: isWeb
+
+                Rectangle {
+                  anchors.fill: parent
+                  radius: 6
+                  color: Qt.rgba(0.38,0.65,1,0.15)
+
+                  Text {
+                    anchors.centerIn: parent
+                    text: "\u2197"
+                    color: "#60a5fa"
+                    font.pixelSize: 18
+                    font.weight: Font.Bold
+                  }
+                }
+              }
+
               Column {
-                x: isApp ? 54 : (isYt ? 54 : (isShell ? 54 : 22))
+                x: isApp ? 54 : (isYt ? 54 : (isShell ? 54 : (isWeb ? 54 : 22)))
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
 
                 Text {
-                  text: isShell ? row.modelData.code : row.modelData.name
-                  color: row.isSelected ? root.textPrimary : root.textPrimary
+                  text: isShell ? row.modelData.code : (isWeb ? row.modelData.code : row.modelData.name)
+                  color: root.textPrimary
                   font.pixelSize: 14
                   font.weight: Font.Normal
                   elide: Text.ElideRight
-                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : 420))
+                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : (isWeb ? 380 : 420)))
                   opacity: row.isSelected ? 1.0 : 0.85
                 }
 
@@ -1424,11 +1501,13 @@ Scope {
                       ? row.modelData.command
                       : isYt
                         ? (row.modelData.author + "  \u00B7  " + row.modelData.duration)
-                        : row.modelData.dir + (row.modelData.ext ? "  \u00B7  " + row.modelData.ext : "")
-                  color: isApp ? root.textSecondary : (isShell ? "#4ade80" : (isYt ? "#ff4444" : "#eaff00"))
+                        : isWeb
+                          ? row.modelData.url
+                          : row.modelData.dir + (row.modelData.ext ? "  \u00B7  " + row.modelData.ext : "")
+                  color: isApp ? root.textSecondary : (isShell ? "#4ade80" : (isYt ? "#ff4444" : (isWeb ? "#60a5fa" : "#eaff00")))
                   font.pixelSize: 11
                   elide: Text.ElideRight
-                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : 420))
+                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : (isWeb ? 380 : 420)))
                   opacity: 0.7
                 }
               }
