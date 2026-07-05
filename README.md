@@ -34,14 +34,14 @@ chmod +x install.sh && ./install.sh
 - `mpv` — video/audio playback
 - `yazi` — directory file browser
 - `wl-copy` — clipboard copy for code blocks
-- `libcurl` + `nlohmann-json` — YouTube search (compiled binary)
+- `libcurl` + `nlohmann-json` — YouTube search (compiled C++ binary with gzip compression)
 
 ### Steps
 
 ```bash
 git clone https://github.com/pratik2005ko/notlight.git
 cd notlight
-g++ -std=c++17 yt-search.cpp -o yt-search -lcurl
+g++ -std=c++17 -O2 -s yt-search.cpp -o yt-search -lcurl
 ln -sf "$PWD" ~/.config/quickshell/spotlight
 ```
 

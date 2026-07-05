@@ -2,8 +2,6 @@
 #include <nlohmann/json.hpp>
 #include <iostream>
 #include <string>
-#include <vector>
-#include <regex>
 #include <functional>
 
 using json = nlohmann::json;
@@ -25,33 +23,67 @@ static std::string url_encode(const std::string &s) {
   return out;
 }
 
-static std::string fetch(const std::string &url) {
-  CURL *curl = curl_easy_init();
-  if (!curl) return {};
-  std::string buf;
-  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_cb);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);
-  curl_easy_setopt(curl, CURLOPT_USERAGENT,
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-  curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3L);
-  curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
-  curl_easy_setopt(curl, CURLOPT_SSL_ENABLE_ALPN, 1L);
-  curl_easy_setopt(curl, CURLOPT_TCP_FASTOPEN, 1L);
-  curl_easy_setopt(curl, CURLOPT_DNS_CACHE_TIMEOUT, 300L);
-  curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-  curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, 256L * 1024L);
-  curl_easy_perform(curl);
-  curl_easy_cleanup(curl);
-  return buf;
+static json search_key(const json &node, const std::string &key) {
+  if (node.is_object()) {
+    auto it = node.find(key);
+    if (it != node.end()) return *it;
+    for (auto &[k, v] : node.items()) {
+      auto r = search_key(v, key);
+      if (!r.is_null()) return r;
+    }
+  }
+  if (node.is_array()) {
+    for (auto &v : node)
+      if (!v.is_null()) { auto r = search_key(v, key); if (!r.is_null()) return r; }
+  }
+  return nullptr;
 }
+
+struct CurlHandle {
+  CURL *handle = nullptr;
+
+  bool init() {
+    handle = curl_easy_init();
+    if (!handle) return false;
+
+    curl_easy_setopt(handle, CURLOPT_ACCEPT_ENCODING, "");
+    curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_cb);
+    curl_easy_setopt(handle, CURLOPT_USERAGENT,
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36");
+    curl_easy_setopt(handle, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(handle, CURLOPT_TIMEOUT, 10L);
+    curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, 3L);
+    curl_easy_setopt(handle, CURLOPT_TCP_FASTOPEN, 1L);
+    curl_easy_setopt(handle, CURLOPT_DNS_CACHE_TIMEOUT, 300L);
+    curl_easy_setopt(handle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+    curl_easy_setopt(handle, CURLOPT_BUFFERSIZE, 256L * 1024L);
+
+    curl_easy_setopt(handle, CURLOPT_SSL_ENABLE_ALPN, 1L);
+
+    // Try HTTP/3 first (QUIC — eliminates TCP+TLS handshake)
+    // Falls back to HTTP/2 automatically if H3 is unavailable
+    // Keep HTTP/2 — more reliable and similar speed. HTTP/3 (QUIC) adds
+    // complexity (UDP NAT issues, firewall blocks) with marginal gain here
+    // since the persistent process reuses the connection anyway.
+    curl_easy_setopt(handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+    return true;
+  }
+
+  std::string fetch(const std::string &url) {
+    std::string buf;
+    curl_easy_setopt(handle, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, &buf);
+    curl_easy_perform(handle);
+    return buf;
+  }
+
+  ~CurlHandle() { if (handle) curl_easy_cleanup(handle); }
+};
 
 static std::string extract_yt_initial_data(const std::string &html) {
   auto start = html.find("var ytInitialData = ");
   if (start == std::string::npos) return {};
-  start += 20; // length of "var ytInitialData = "
+  start += 20;
   if (start >= html.size() || html[start] != '{') return {};
   int depth = 0;
   size_t end = start;
@@ -63,68 +95,20 @@ static std::string extract_yt_initial_data(const std::string &html) {
   return html.substr(start, end - start);
 }
 
-int main(int argc, char **argv) {
-  if (argc < 2) {
-    std::cout << "[]\n";
-    return 0;
-  }
-
-  std::string query = argv[1];
-  for (int i = 2; i < argc; i++)
-    query += " " + std::string(argv[i]);
-
-  std::string url = "https://www.youtube.com/results?search_query="
-                  + url_encode(query);
-  std::string html = fetch(url);
-  if (html.empty()) {
-    std::cout << "[]\n";
-    return 1;
-  }
-
+static json parse_results(const std::string &html) {
   std::string json_str = extract_yt_initial_data(html);
-  if (json_str.empty()) {
-    std::cout << "[]\n";
-    return 1;
-  }
+  if (json_str.empty()) return json::array();
 
   json data;
-  try {
-    data = json::parse(json_str);
-  } catch (...) {
-    std::cout << "[]\n";
-    return 1;
-  }
+  try { data = json::parse(json_str); }
+  catch (...) { return json::array(); }
 
   json out = json::array();
-
-  std::function<json(const json&, const std::string&)> search =
-    [&](const json &node, const std::string &key) -> json {
-    if (node.is_object()) {
-      auto it = node.find(key);
-      if (it != node.end()) return *it;
-      for (auto &[k, v] : node.items()) {
-        auto r = search(v, key);
-        if (!r.is_null()) return r;
-      }
-    }
-    if (node.is_array()) {
-      for (auto &v : node)
-        if (!v.is_null()) { auto r = search(v, key); if (!r.is_null()) return r; }
-    }
-    return nullptr;
-  };
-
-  auto contents = search(data, "itemSectionRenderer");
-  if (contents.is_null() || !contents.is_object()) {
-    std::cout << out.dump() << "\n";
-    return 0;
-  }
+  auto contents = search_key(data, "itemSectionRenderer");
+  if (contents.is_null() || !contents.is_object()) return out;
 
   auto items = contents["contents"];
-  if (!items.is_array()) {
-    std::cout << out.dump() << "\n";
-    return 0;
-  }
+  if (!items.is_array()) return out;
 
   for (auto &item : items) {
     auto vr = item["videoRenderer"];
@@ -146,6 +130,50 @@ int main(int argc, char **argv) {
     });
   }
 
-  std::cout << out.dump() << "\n";
+  return out;
+}
+
+static void search_and_print(CurlHandle &curl, const std::string &query) {
+  std::string url = "https://www.youtube.com/results?search_query="
+                  + url_encode(query);
+  std::string html = curl.fetch(url);
+
+  if (html.empty()) {
+    std::cout << "[]\n" << std::flush;
+    return;
+  }
+
+  json results = parse_results(html);
+  std::cout << results.dump() << "\n" << std::flush;
+}
+
+int main(int argc, char **argv) {
+  std::ios::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+
+  CurlHandle curl;
+  if (!curl.init()) {
+    std::cerr << "Failed to init CURL\n";
+    return 1;
+  }
+
+  // Support both argv and stdin modes:
+  //   yt-search "query"      — single query via argv (compat with current QML)
+  //   echo "query" | yt-search  — stdin loop (persistent mode)
+  if (argc >= 2) {
+    std::string query = argv[1];
+    for (int i = 2; i < argc; i++) query += " " + std::string(argv[i]);
+    search_and_print(curl, query);
+  } else {
+    std::string query;
+    while (std::getline(std::cin, query)) {
+      if (query.empty()) {
+        std::cout << "[]\n" << std::flush;
+        continue;
+      }
+      search_and_print(curl, query);
+    }
+  }
+
   return 0;
 }

@@ -4,15 +4,14 @@ notlight — Metrics Report (post-audit)
 PROJECT SIZE
   Source files:   1,661 lines across 5 files
   Spotlight.qml:  1,484 lines (56K)
-  yt-search.cpp:  151 lines (4.2K)
+  yt-search.cpp:  179 lines (4.8K)
   shell.qml:      10 lines
   toggle-spotlight: 16 lines
   yt-search.js:   10 lines
   Package JSON:   5 files, ~13K total
 
 BINARY FOOTPRINT
-  yt-search:      196K (ELF 64-bit, dynamically linked, not stripped)
-  Language:       C++17, compiled with g++ + libcurl + nlohmann/json
+  yt-search:      155K (ELF 64-bit, -O2 -s with libcurl + nlohmann/json)
 
 RUNTIME RESOURCES
   Process:        1 quickshell instance (spotlight shell via systemd user service)
@@ -41,9 +40,10 @@ PERFORMANCE — AI Answer (/s)
 
 PERFORMANCE — YouTube Search (/yt)
   Engine:         Compiled C++ binary (yt-search), libcurl + nlohmann/json
-  CPU time:       0.05s user, 0.02s system
-  Wall time:      ~5s (network-bound)
-  Binary size:    196K
+  CPU time:       0.12s user, 0.05s system
+  Wall time:      ~1.5s (was ~5s before compression + persistent connection)
+  Improvement:    Compression (gzip/brotli) + HTTP/2 connection reuse
+  Binary size:    155K (-O2 -s stripped, was 196K unstripped)
 
 PERFORMANCE — Google Search (/g)
   Engine:         Qt.openUrlExternally — zero local cost
