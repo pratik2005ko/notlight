@@ -1,22 +1,25 @@
 # notlight
 
-A multi-mode launcher for Hyprland built with [Quickshell](https://github.com/Quickshell/Quickshell).
+A slick launcher for Hyprland that does way more than just launch apps. Built with [Quickshell](https://github.com/Quickshell/Quickshell).
 
-## Features
+I use this thing all day — it replaces app launchers, file search, web search, terminal command runner, and even answers questions with AI. All from one little panel.
 
-- **App search** (default mode) — instant filtering of installed applications by name, comment, or categories
-- **File search** (`/f query`) — fast file search via `fd`, categorized by extension (video, audio, image, doc, directory, etc.)
-- **AI answer** (`/s query`) — ask Groq AI for natural-language answers with syntax-highlighted code blocks and per-block copy buttons
-- **Google search** (`/g query`) — open search query in browser (Enter to trigger)
-- **YouTube inline search** (`/yt query`) — search videos inline, preview results with duration, launch in browser on Enter
-- **Web mode** (`/w code`) — open a saved URL by its short name
-- **Capture mode** (`/cap url code`) — save a URL with a short name for quick access
-- **Shell mode** (`/sh query`) — fuzzy search and launch predefined terminal commands
-- **Shell capture** (`/sc code command`) — save a terminal command with a short code name
-- **Alias system** — right-click an app result to set/remove a custom alias (boosts to top of search results)
-- **macOS-style spring animation** — centered panel with scale bounce on open/close
+## What it can do
 
-## Quick Install
+Hit your keybind (Alt+Space by default) and start typing:
+
+- **App search** — just start typing an app name. Filters by name, comment, even categories. Works instantly.
+- **File search** — `/f something` — searches your home directory with `fd`, sorted by type (video, audio, image, doc, etc.)
+- **AI answer** — `/s ask me anything` — sends your question to Groq AI, gets back an answer with code blocks you can copy with one click
+- **Google search** — `/g query` — opens a browser tab with your search. Press Enter to send.
+- **YouTube** — `/yt search terms` — shows video results inline with duration, press Enter on one to watch
+- **Web bookmarks** — `/w code` — opens a saved URL by a short name you gave it
+- **Capture URLs** — `/cap https://example.com mycode` — saves a URL with a short name for later
+- **Shell commands** — `/sh query` — fuzzy search through your saved terminal commands, Enter to launch in kitty
+- **Capture commands** — `/sc mycode ls -la` — saves a terminal command with a short name
+- **Aliases** — right-click any app result to give it a nickname (it'll jump to the top when you type that)
+
+## One-command install
 
 ```bash
 git clone https://github.com/pratik2005ko/notlight.git
@@ -24,17 +27,19 @@ cd notlight
 chmod +x install.sh && ./install.sh
 ```
 
-## Manual Install
+That's it. The script checks dependencies, compiles the YouTube search binary, symlinks the config, and sets up the systemd service.
 
-### Dependencies
+## Doing it manually
 
-- [Quickshell](https://github.com/Quickshell/Quickshell)
-- `fd` — file search (`/f`)
-- `kitty` — terminal for terminal apps and directory browser (yazi)
-- `mpv` — video/audio playback
-- `yazi` — directory file browser
-- `wl-copy` — clipboard copy for code blocks
-- `libcurl` + `nlohmann-json` — YouTube search (compiled C++ binary with gzip compression)
+### What you need
+
+- **Quickshell** — the framework this runs on
+- **fd** — powers the file search
+- **kitty** — my terminal of choice (for apps that need a terminal and the file browser)
+- **mpv** — plays videos and audio from file search results
+- **yazi** — the directory browser that opens when you hit a folder
+- **wl-copy** — for the "copy to clipboard" button on code blocks in AI answers
+- **libcurl + nlohmann-json** — for building the YouTube search binary
 
 ### Steps
 
@@ -45,10 +50,11 @@ g++ -std=c++17 -O2 -s yt-search.cpp -o yt-search -lcurl
 ln -sf "$PWD" ~/.config/quickshell/spotlight
 ```
 
-### Systemd Service (auto-start)
+### Setting it up as a service (auto-start)
 
 ```bash
 mkdir -p ~/.config/systemd/user
+
 cat > ~/.config/systemd/user/notlight.service << 'EOF'
 [Unit]
 Description=notlight — Multi-mode launcher
@@ -68,42 +74,40 @@ systemctl --user daemon-reload
 systemctl --user enable --now notlight.service
 ```
 
-### Keybinding
+### Add a keybinding
 
-Add to your Hyprland config:
+Pop this in your Hyprland config:
 
 ```conf
 bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
 ```
 
-## Configuration
+## Getting the AI answer mode to work
 
-### API Key (required for AI answer mode)
-
-On first use in `/s` mode, the UI will prompt you to enter your Groq API key. You can also create the file manually:
+You'll need a Groq API key. When you use `/s` for the first time without one, the panel shows a text field where you can paste it in. Or you can create the file yourself:
 
 ```json
 # ~/.config/quickshell/spotlight-data/secrets.json
 {"groq_key": "gsk_your_key_here"}
 ```
 
-## Usage
+## How to use it
 
-| Prefix | Mode | Action |
-|--------|------|--------|
-| *(none)* | App search | Filter installed apps by name/comment/categories |
-| `/f` | File search | Search files by name via `fd` |
-| `/s` | AI answer | Ask Groq AI (Enter to send) |
-| `/g` | Google search | Open Google search in browser (Enter to send) |
-| `/yt` | YouTube | Search videos inline (Enter to send, Enter on result to open) |
-| `/w` | Web | Open a saved URL by short name (Enter to open) |
-| `/cap` | Capture | Save a URL with a short code name (Enter to save) |
-| `/sh` | Shell | Fuzzy search predefined terminal commands (Enter to launch in kitty) |
-| `/sc` | Shell capture | Save a terminal command with a short code name (Enter to save) |
+| Prefix | Mode | What happens |
+|--------|------|-------------|
+| *(none)* | App | Just type and pick an app |
+| `/f` | Files | Searches files with `fd` |
+| `/s` | AI Ask | Sends to Groq AI (press Enter) |
+| `/g` | Google | Opens Google in your browser |
+| `/yt` | YouTube | Shows inline results, Enter to open |
+| `/w` | Web | Opens a URL you saved earlier |
+| `/cap` | Capture | Save a URL with a short code |
+| `/sh` | Shell | Finds and launches a saved command |
+| `/sc` | Shell capture | Save a command with a short code |
 
-Both `/` and `\` work as prefix characters (`\f`, `\s`, etc.). All data is stored in `~/.config/quickshell/spotlight-data/` (separate from the repo).
+Both `/` and `\` work as prefix (handy if your keyboard layout makes `/` awkward). Your stuff is stored in `~/.config/quickshell/spotlight-data/` — separate from the repo, so updates don't wipe anything.
 
-In AI answer mode, code blocks in responses have individual **copy** buttons — click to copy that block to clipboard via `wl-copy`.
+When AI mode shows you code, each block has a little **copy** button that uses `wl-copy` under the hood.
 
 ## Updating
 
@@ -113,79 +117,64 @@ git pull
 ./install.sh
 ```
 
-Or use the update script:
+Or just run the update script:
 
 ```bash
 ~/.config/quickshell/spotlight/update.sh
 ```
 
-The script pulls the latest code and recompiles yt-search if needed. Your data files (`secrets.json`, `captures.json`, etc.) are stored separately in `~/.config/quickshell/spotlight-data/` and are never touched.
+It pulls the latest code and rebuilds the YouTube binary if needed. Your data files are safe — they live outside the repo.
 
-## Uninstall
+## Uninstalling
 
 ```bash
-# Stop and disable service
 systemctl --user stop notlight.service
 systemctl --user disable notlight.service
 rm -f ~/.config/systemd/user/notlight.service
 systemctl --user daemon-reload
 
-# Remove data (captures, commands, aliases, API key)
 rm -rf ~/.config/quickshell/spotlight-data
 rm -f ~/.config/quickshell/spotlight
 
-# Remove repo (if installed via git clone)
+# Delete the repo folder if you cloned it
 # rm -rf /path/to/notlight
 ```
 
-## Configuration Files
+## Where your data lives
 
-All data is stored in `~/.config/quickshell/spotlight-data/` (outside the repo):
+Everything is in `~/.config/quickshell/spotlight-data/`:
 
-| File | Purpose |
-|------|---------|
-| `secrets.json` | Groq API key (`{"groq_key": "gsk_..."}`) |
-| `captures.json` | Saved URLs from `/cap` mode |
-| `commands.json` | Saved shell commands from `/sc` mode |
-| `aliases.json` | App aliases set via right-click |
+| File | What's in it |
+|------|-------------|
+| `secrets.json` | Your Groq API key |
+| `captures.json` | URLs you saved with `/cap` |
+| `commands.json` | Shell commands you saved with `/sc` |
+| `aliases.json` | App nicknames set via right-click |
 
-These files are auto-created on first use — no manual setup required.
+These get created automatically the first time you use a feature — no manual setup needed.
 
-## Changing the Toggle Keybinding
+## Changing the keybinding
 
-Edit your Hyprland config (`~/.config/hypr/hyprland.conf`) and change the bind:
+Edit your Hyprland config (`~/.config/hypr/hyprland.conf`):
 
 ```conf
-# Default: Alt+Space
 bind = Alt, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
-
-# Example: Super+Space instead
-# bind = SUPER, Space, exec, ~/.config/quickshell/spotlight/toggle-spotlight
 ```
 
-Then reload: `hyprctl reload`
+Then reload with `hyprctl reload`.
 
-## Modes at a Glance
+## How it works under the hood
 
-Type these prefixes in the search bar to switch modes:
+It runs as a systemd user service so it's always ready. The toggle script just sends an IPC signal to show or hide the panel — no restart, no delay. systemd fires it up when you log in, and it sits there using basically no resources until you need it.
 
-| Prefix | Mode | What it does |
-|--------|------|-------------|
-| *(none)* | App | Launch installed apps |
-| `/f` | File | Search files via `fd` |
-| `/s` | AI | Ask Groq AI anything |
-| `/g` | Google | Search in browser |
-| `/yt` | YouTube | Search videos inline |
-| `/w` | Web | Open a saved URL |
-| `/cap` | Capture | Save a URL with a short name |
-| `/sh` | Shell | Launch a saved command |
-| `/sc` | Shell capture | Save a terminal command |
+## Themes
 
-Type `\f`, `\s`, etc. if `/` conflicts with your keyboard layout.
+Two built-in themes you can switch between:
 
-## Architecture
+- **macOS** — the original frosted glass look with rounded corners, smooth animations
+- **Windows 95** — chonky gray bevels, square corners, classic title bar
 
-notlight runs as a **systemd user service** (daemonized). The toggle script uses `qs ipc` to show/hide the panel without restarting the process, keeping startup instant. On first launch after boot, systemd starts the service automatically.
+Switch with `/theme macos` or `/theme win95` in the search bar, or from the terminal: `qs ipc call spotlight themeWin95`. Your choice sticks — it's saved to `theme.json`.
 
 ## License
 

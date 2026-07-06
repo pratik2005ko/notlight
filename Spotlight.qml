@@ -8,17 +8,256 @@ import Quickshell.Wayland
 Scope {
   id: root
 
-  readonly property color accent: "#0a84ff"
-  readonly property color bgPanel: "#f00d0d0d"
-  readonly property color bgRow: "#141414"
-  readonly property color bgRowHover: "#1c1c1c"
-  readonly property color textPrimary: "#e5e5e5"
-  readonly property color textSecondary: "#666666"
-  readonly property color textAccent: "#ffffff"
-  readonly property color borderColor: "#20ffffff"
-  readonly property color dividerColor: "#15ffffff"
-  readonly property int radius: 14
-  readonly property int radiusInner: 8
+  // --- Theme definitions ---
+  readonly property var _macosTheme: ({
+    accent: "#0a84ff",
+    bgPanel: "#e6242424",
+    bgRow: "#16ffffff",
+    bgRowHover: "#1fffffff",
+    textPrimary: "#f2f2f2",
+    textSecondary: "#98989d",
+    textAccent: "#ffffff",
+    textSelected: "#ffffff",
+    descriptionSelected: "#e6ffffff",
+    borderColor: "#26ffffff",
+    dividerColor: "#14ffffff",
+    bevelLight: "#00ffffff",
+    bevelDark: "#00ffffff",
+    bevelDarker: "#00ffffff",
+    hasBevelBorder: false,
+    showTitleBar: false,
+    hasShadow: true,
+    shadowColor: "#66000000",
+    glassHighlight: "#0dffffff",
+    panelScaleClosed: 0.96,
+    animOpacityDuration: 140,
+    animOpacityEasing: Easing.OutCubic,
+    animScaleDuration: 260,
+    animScaleEasing: Easing.OutCubic,
+    animHeightDuration: 180,
+    animHeightEasing: Easing.OutCubic,
+    radius: 20,
+    radiusInner: 9,
+    surface: "#14ffffff",
+    surfaceBorder: "#14ffffff",
+    fontFamily: "",
+    monoFontFamily: "monospace",
+    searchLetterSpacing: -0.2,
+    descriptionFontSize: 11,
+    modePillBg: "#1affffff",
+    modePillBorder: "#22ffffff",
+    codeBlockBg: "#1affffff",
+    codeBlockBorder: "#1fffffff",
+    codeBlockRadius: 8,
+    codeLangBg: Qt.rgba(0.29,0.87,0.5,0.15),
+    codeLangText: "#4ade80",
+    codeTextColor: "#e5e5e5",
+    codeCopyBg: Qt.rgba(0.29,0.87,0.5,0.12),
+    codeCopyBgHover: Qt.rgba(0.29,0.87,0.5,0.25),
+    codeCopyBorder: Qt.rgba(0.29,0.87,0.5,0.25),
+    codeCopyBorderHover: Qt.rgba(0.29,0.87,0.5,0.5),
+    codeCopyText: Qt.rgba(0.29,0.87,0.5,0.8),
+    codeCopyTextDone: "#4ade80",
+    inputBg: "#14ffffff",
+    buttonText: "#ffffff",
+    feedbackColor: "#4ade80",
+    selectionTextColor: "#ffffff",
+    descriptionSelectedColor: "#e6ffffff",
+    aliasColor: "#f472b6",
+    aliasSelectedColor: "#ffffff",
+    typePillBg: "#12ffffff",
+    typePillBorder: "#12ffffff",
+    typePillSelectedBg: "#26ffffff",
+    iconBg: Qt.rgba(0.96,0.45,0.71,0.18),
+    iconRadius: 9,
+    titleBarGradientFrom: "#000000",
+    titleBarGradientTo: "#000000",
+    titleBarText: "#ffffff",
+    titleBarLabel: "Spotlight",
+    categoryColors: {
+      video:  "#60a5fa",
+      audio:  "#a78bfa",
+      image:  "#fb923c",
+      doc:    "#4ade80",
+      dir:    "#94a3b8",
+      other:  "#64748b",
+      app:    "#f472b6",
+      youtube:"#a78bfa",
+      shell:  "#4ade80",
+      web:    "#60a5fa",
+    },
+  })
+
+  readonly property var _win95Theme: ({
+    accent: "#000080",
+    bgPanel: "#c0c0c0",
+    bgRow: "#c0c0c0",
+    bgRowHover: "#d4d0c8",
+    textPrimary: "#000000",
+    textSecondary: "#404040",
+    textAccent: "#ffffff",
+    textSelected: "#ffffff",
+    descriptionSelected: "#d4d0c8",
+    borderColor: "#000000",
+    dividerColor: "#808080",
+    bevelLight: "#ffffff",
+    bevelDark: "#808080",
+    bevelDarker: "#000000",
+    hasBevelBorder: true,
+    showTitleBar: true,
+    hasShadow: false,
+    shadowColor: "#66000000",
+    glassHighlight: "#0dffffff",
+    panelScaleClosed: 1.0,
+    animOpacityDuration: 60,
+    animOpacityEasing: Easing.Linear,
+    animScaleDuration: 0,
+    animScaleEasing: Easing.Linear,
+    animHeightDuration: 0,
+    animHeightEasing: Easing.Linear,
+    radius: 0,
+    radiusInner: 0,
+    surface: "#c0c0c0",
+    surfaceBorder: "#808080",
+    fontFamily: "Tahoma",
+    monoFontFamily: "Courier New",
+    searchLetterSpacing: 0,
+    descriptionFontSize: 10,
+    modePillBg: "#c0c0c0",
+    modePillBorder: "#808080",
+    codeBlockBg: "#ffffff",
+    codeBlockBorder: "#808080",
+    codeBlockRadius: 0,
+    codeLangBg: "#808080",
+    codeLangText: "#ffffff",
+    codeTextColor: "#000000",
+    codeCopyBg: "#c0c0c0",
+    codeCopyBgHover: "#d4d0c8",
+    codeCopyBorder: "#808080",
+    codeCopyBorderHover: "#808080",
+    codeCopyText: "#000000",
+    codeCopyTextDone: "#008000",
+    inputBg: "#ffffff",
+    buttonText: "#ffffff",
+    feedbackColor: "#008000",
+    selectionTextColor: "#ffffff",
+    descriptionSelectedColor: "#d4d0c8",
+    aliasColor: "#800080",
+    aliasSelectedColor: "#ffffff",
+    typePillBg: "#c0c0c0",
+    typePillBorder: "#000000",
+    typePillSelectedBg: "#c0c0c0",
+    iconBg: "#c0c0c0",
+    iconRadius: 0,
+    titleBarGradientFrom: "#000080",
+    titleBarGradientTo: "#1084d0",
+    titleBarText: "#ffffff",
+    titleBarLabel: "Spotlight95",
+    categoryColors: {
+      video:  "#000080",
+      audio:  "#800080",
+      image:  "#804000",
+      doc:    "#008000",
+      dir:    "#404040",
+      other:  "#404040",
+      app:    "#800000",
+      youtube:"#800080",
+      shell:  "#008000",
+      web:    "#000080",
+    },
+  })
+
+  property var theme: _win95Theme
+  property string themeName: "win95"
+
+  readonly property color accent: theme.accent
+  readonly property color bgPanel: theme.bgPanel
+  readonly property color bgRow: theme.bgRow
+  readonly property color bgRowHover: theme.bgRowHover
+  readonly property color textPrimary: theme.textPrimary
+  readonly property color textSecondary: theme.textSecondary
+  readonly property color textAccent: theme.textAccent
+  readonly property color textSelected: theme.textSelected
+  readonly property color descriptionSelected: theme.descriptionSelected
+  readonly property color borderColor: theme.borderColor
+  readonly property color dividerColor: theme.dividerColor
+  readonly property color bevelLight: theme.bevelLight
+  readonly property color bevelDark: theme.bevelDark
+  readonly property color bevelDarker: theme.bevelDarker
+  readonly property bool hasBevelBorder: theme.hasBevelBorder
+  readonly property bool showTitleBar: theme.showTitleBar
+  readonly property bool hasThemeShadow: theme.hasShadow
+  readonly property real panelScaleClosed: theme.panelScaleClosed
+  readonly property int animOpacityDuration: theme.animOpacityDuration
+  readonly property int animOpacityEasing: theme.animOpacityEasing
+  readonly property int animScaleDuration: theme.animScaleDuration
+  readonly property int animScaleEasing: theme.animScaleEasing
+  readonly property int animHeightDuration: theme.animHeightDuration
+  readonly property int animHeightEasing: theme.animHeightEasing
+  readonly property int radius: theme.radius
+  readonly property int radiusInner: theme.radiusInner
+  readonly property color surface: theme.surface
+  readonly property color surfaceBorder: theme.surfaceBorder
+  readonly property string fontFamily: theme.fontFamily
+  readonly property string monoFontFamily: theme.monoFontFamily
+  readonly property real searchLetterSpacing: theme.searchLetterSpacing
+  readonly property int descriptionFontSize: theme.descriptionFontSize
+  readonly property color modePillBg: theme.modePillBg
+  readonly property color modePillBorder: theme.modePillBorder
+  readonly property color codeBlockBg: theme.codeBlockBg
+  readonly property color codeBlockBorder: theme.codeBlockBorder
+  readonly property int codeBlockRadius: theme.codeBlockRadius
+  readonly property color codeLangBg: theme.codeLangBg
+  readonly property color codeLangText: theme.codeLangText
+  readonly property color codeTextColor: theme.codeTextColor
+  readonly property color codeCopyBg: theme.codeCopyBg
+  readonly property color codeCopyBgHover: theme.codeCopyBgHover
+  readonly property color codeCopyBorder: theme.codeCopyBorder
+  readonly property color codeCopyBorderHover: theme.codeCopyBorderHover
+  readonly property color codeCopyText: theme.codeCopyText
+  readonly property color codeCopyTextDone: theme.codeCopyTextDone
+  readonly property color inputBg: theme.inputBg
+  readonly property color buttonText: theme.buttonText
+  readonly property color feedbackColor: theme.feedbackColor
+  readonly property color selectionTextColor: theme.selectionTextColor
+  readonly property color descriptionSelectedColor: theme.descriptionSelectedColor
+  readonly property color aliasColor: theme.aliasColor
+  readonly property color aliasSelectedColor: theme.aliasSelectedColor
+  readonly property color typePillBg: theme.typePillBg
+  readonly property color typePillBorder: theme.typePillBorder
+  readonly property color typePillSelectedBg: theme.typePillSelectedBg
+  readonly property color iconBg: theme.iconBg
+  readonly property int iconRadius: theme.iconRadius
+  readonly property color shadowColor: theme.shadowColor
+  readonly property color glassHighlight: theme.glassHighlight
+  readonly property color titleBarGradientFrom: theme.titleBarGradientFrom
+  readonly property color titleBarGradientTo: theme.titleBarGradientTo
+  readonly property color titleBarText: theme.titleBarText
+  readonly property string titleBarLabel: theme.titleBarLabel
+
+  readonly property var categoryInfo: ({
+    video:  { label: "VIDEO",  color: theme.categoryColors.video },
+    audio:  { label: "AUDIO",  color: theme.categoryColors.audio },
+    image:  { label: "IMAGE",  color: theme.categoryColors.image },
+    doc:    { label: "DOC",    color: theme.categoryColors.doc },
+    dir:    { label: "DIR",    color: theme.categoryColors.dir },
+    other:  { label: "FILE",   color: theme.categoryColors.other },
+    app:    { label: "APP",    color: theme.categoryColors.app },
+    youtube:{ label: "YT",    color: theme.categoryColors.youtube },
+    shell:  { label: "SHELL", color: theme.categoryColors.shell },
+    web:    { label: "WEB",   color: theme.categoryColors.web },
+  })
+
+  function applyTheme(name) {
+    if (name === "macos") {
+      root.theme = _macosTheme
+      root.themeName = "macos"
+    } else {
+      root.theme = _win95Theme
+      root.themeName = "win95"
+    }
+    root.writeTheme()
+  }
 
   property bool open: false
   property string mode: "app"
@@ -26,7 +265,6 @@ Scope {
   property var results: []
   property int selectedIndex: 0
   property bool searching: false
-
 
   property string answerTitle: ""
   property string answerText: ""
@@ -56,27 +294,17 @@ Scope {
   property string capturesPath: home + "/.config/quickshell/spotlight-data/captures.json"
   property var commands: ({})
   property string commandsPath: home + "/.config/quickshell/spotlight-data/commands.json"
+  property string themePath: home + "/.config/quickshell/spotlight-data/theme.json"
 
   readonly property string home: Quickshell.env("HOME") || ""
-
-  readonly property var categoryInfo: ({
-    video:  { label: "VIDEO",  color: "#60a5fa" },
-    audio:  { label: "AUDIO",  color: "#a78bfa" },
-    image:  { label: "IMAGE",  color: "#fb923c" },
-    doc:    { label: "DOC",    color: "#4ade80" },
-    dir:    { label: "DIR",    color: "#94a3b8" },
-    other:  { label: "FILE",   color: "#64748b" },
-    app:    { label: "APP",    color: "#f472b6" },
-    youtube: { label: "YT",    color: "#a78bfa" },
-    shell:  { label: "SHELL", color: "#4ade80" },
-    web:    { label: "WEB",  color: "#60a5fa" },
-  })
 
   IpcHandler {
     target: "spotlight"
     function toggle() { root.open = !root.open }
     function show() { root.open = true }
     function hide() { root.open = false }
+    function themeMacos() { root.applyTheme("macos") }
+    function themeWin95() { root.applyTheme("win95") }
   }
 
   onOpenChanged: {
@@ -90,8 +318,6 @@ Scope {
       root.answerUrl = ""
       root.answerSource = ""
       root.aliasInputDesktopId = ""
-      searchInput.text = ""
-      searchInput.forceActiveFocus()
       if (!root.appsLoaded)
         root.loadApps()
       if (!root.aliasesLoaded)
@@ -101,6 +327,7 @@ Scope {
       if (!root.commandsLoaded)
         root.loadCommands()
       root.loadSecrets()
+      root.loadTheme()
     }
   }
 
@@ -120,6 +347,22 @@ Scope {
       root.answerUrl = ""
       root.answerSource = ""
       searchTimer.stop()
+      return
+    }
+
+    if (raw.slice(0, 6) === "/theme" && raw.length >= 7 && raw[6] === " ") {
+      var t = raw.slice(7).trim().toLowerCase()
+      if (t === "macos" || t === "win95") {
+        root.applyTheme(t)
+        root.mode = "answer"
+        root.searchQuery = ""
+        root.results = []
+        root.searching = false
+        root.answerTitle = ""
+        root.answerUrl = ""
+        root.answerSource = ""
+        root.answerText = t === "macos" ? "Theme: macOS" : "Theme: Windows 95"
+      }
       return
     }
 
@@ -163,7 +406,6 @@ Scope {
       return
     }
 
-    // No prefix detected
     if (root.mode === "file") {
       root.searchQuery = raw
       if (raw.length > 0)
@@ -185,7 +427,6 @@ Scope {
       return
     }
 
-    // Default: app mode
     root.mode = "app"
     root.answerTitle = ""
     root.answerText = ""
@@ -390,6 +631,25 @@ Scope {
     stderr: StdioCollector {}
   }
 
+  Process {
+    id: themeLoadProc
+    stdout: StdioCollector {
+      onStreamFinished: {
+        try {
+          var data = JSON.parse(text)
+          if (data.theme)
+            root.applyTheme(data.theme)
+        } catch (e) {}
+      }
+    }
+    stderr: StdioCollector {}
+  }
+
+  Process {
+    id: themeSaveProc
+    stderr: StdioCollector {}
+  }
+
   function loadApps() {
     appScanProc.running = false
     appScanProc.command = ["python3", "-c",
@@ -472,6 +732,12 @@ Scope {
     commandLoadProc.running = false
     commandLoadProc.command = ["sh", "-c", "cat \"" + root.commandsPath + "\" 2>/dev/null || echo '{}'"]
     commandLoadProc.running = true
+  }
+
+  function loadTheme() {
+    themeLoadProc.running = false
+    themeLoadProc.command = ["sh", "-c", "cat \"" + root.themePath + "\" 2>/dev/null || echo '{}'"]
+    themeLoadProc.running = true
   }
 
   function filterCaptures(q) {
@@ -639,6 +905,18 @@ Scope {
     commandSaveProc.running = true
   }
 
+  function writeTheme() {
+    themeSaveProc.running = false
+    var json = JSON.stringify({"theme": root.themeName})
+    themeSaveProc.command = [
+      "python3", "-c",
+      "import sys, os; p=sys.argv[1]; os.makedirs(os.path.dirname(p), exist_ok=True); open(p,'w').write(sys.argv[2])",
+      root.themePath,
+      json
+    ]
+    themeSaveProc.running = true
+  }
+
   function resolveAlias(alias) {
     return root.appAliases[alias.trim().toLowerCase()] || ""
   }
@@ -716,7 +994,6 @@ Scope {
     root.groqKey = key
     root.hasGroqKey = true
     root.groqKeyInput = ""
-    groqSetupInput.text = ""
     root.answerText = "Groq key saved! You can now use /s mode."
     root.answerTitle = ""
     root.answerUrl = ""
@@ -909,795 +1186,7 @@ Scope {
     return "Search apps..."
   }
 
-  PanelWindow {
-    id: win
-    color: "transparent"
-    visible: root.open
-    exclusiveZone: 0
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    WlrLayershell.namespace: "quickshell:spotlight"
-    anchors { top: true; bottom: true; left: true; right: true }
-
-    onVisibleChanged: if (visible) searchInput.forceActiveFocus()
-
-    MouseArea {
-      anchors.fill: parent
-      onClicked: root.open = false
-    }
-
-    Item {
-      id: panel
-      width: 640
-      height: Math.min(panelContent.implicitHeight, root.mode === "answer" ? parent.height - 80 : 660)
-      anchors.horizontalCenter: parent.horizontalCenter
-      y: Math.round((parent.height - panel.height) / 2)
-
-      opacity: root.open ? 1 : 0
-      scale: root.open ? 1 : 0.85
-      Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-      Behavior on scale { NumberAnimation { duration: 350; easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
-      Behavior on height { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
-
-      Rectangle {
-        id: panelBg
-        anchors.fill: parent
-        radius: root.radius
-        color: root.bgPanel
-        border.color: root.borderColor
-        border.width: 1
-        clip: true
-
-        MouseArea { anchors.fill: parent }
-
-        Column {
-          id: panelContent
-          width: parent.width
-          spacing: 0
-          padding: 0
-
-          Rectangle {
-            width: parent.width
-            height: 1
-            color: root.dividerColor
-            y: 60
-            visible: root.results.length > 0 || (root.mode === "answer" && (root.answerText.length > 0 || !root.hasGroqKey))
-          }
-
-          Item {
-            id: searchBarItem
-            width: parent.width
-            height: 60
-
-            Image {
-              x: 20
-              anchors.verticalCenter: parent.verticalCenter
-              width: 22
-              height: 22
-              source: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='10' cy='10' r='7' fill='none' stroke='%23666666' stroke-width='2'/%3E%3Cline x1='15.5' y1='15.5' x2='21' y2='21' stroke='%23666666' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"
-            }
-
-            TextInput {
-              id: searchInput
-              x: 54
-              width: parent.width - 118 - modeLabel.width
-              anchors.verticalCenter: parent.verticalCenter
-              color: root.textPrimary
-              font.pixelSize: 22
-              font.weight: Font.Normal
-              selectionColor: root.accent
-              selectByMouse: true
-              clip: true
-
-              onTextChanged: root.processInput(text)
-
-              Text {
-                text: root.placeholderText
-                color: root.textSecondary
-                font: searchInput.font
-                visible: searchInput.text.length === 0
-                anchors.verticalCenter: parent.verticalCenter
-                opacity: 0.7
-              }
-
-              Keys.onPressed: function(ev) {
-                if (ev.key === Qt.Key_Escape) {
-                  root.open = false
-                  ev.accepted = true
-                } else if (ev.key === Qt.Key_Down) {
-                  root.selectedIndex = Math.min(root.selectedIndex + 1, root.results.length - 1)
-                  ev.accepted = true
-                } else if (ev.key === Qt.Key_Up) {
-                  root.selectedIndex = Math.max(root.selectedIndex - 1, 0)
-                  ev.accepted = true
-                  } else if (ev.key === Qt.Key_Return || ev.key === Qt.Key_Enter) {
-                    if (root.mode === "google") {
-                      root.openGoogle(root.searchQuery)
-                    } else if (root.mode === "youtube") {
-                      if (root.results.length > 0 && root.results[root.selectedIndex]) {
-                        root.launch(root.results[root.selectedIndex])
-                      } else if (!root.searching) {
-                        root.runYoutubeSearch()
-                      }
-                    } else if (root.mode === "answer") {
-                      if (!root.searching)
-                        root.runWebSearch()
-                    } else if (root.mode === "web") {
-                      var sel = root.results[root.selectedIndex]
-                      if (sel && sel.type === "web") {
-                        Qt.openUrlExternally(sel.url)
-                        root.open = false
-                      } else {
-                        var code = root.searchQuery.trim().toLowerCase()
-                        var url = root.captures[code]
-                        if (url) {
-                          Qt.openUrlExternally(url)
-                          root.open = false
-                        } else if (code.length > 0) {
-                          root.answerText = "No URL saved for \"" + code + "\". Add one with /cap <url> <code>"
-                          root.answerTitle = ""
-                          root.answerUrl = ""
-                          root.answerSource = ""
-                          root.mode = "answer"
-                        }
-                      }
-                    } else if (root.mode === "capture" || root.mode === "shellcap") {
-                      var text = root.searchQuery.trim()
-                      var lastSpace = text.lastIndexOf(" ")
-                      if (lastSpace > 0) {
-                        var first = text.slice(0, lastSpace).trim()
-                        var code = text.slice(lastSpace + 1).trim()
-                        if (root.mode === "capture" && first.length > 0 && code.length > 0)
-                          root.saveCapture(code, first)
-                        else if (root.mode === "shellcap" && first.length > 0 && code.length > 0)
-                          root.saveCommand(code, first)
-                      }
-                    } else if (root.mode === "shell") {
-                      var sel = root.results[root.selectedIndex]
-                      if (sel && sel.type === "shell") {
-                        Quickshell.execDetached(["kitty", "-e", "/bin/sh", "-c", sel.command])
-                        root.open = false
-                      }
-                    } else {
-                      root.launch(root.results[root.selectedIndex])
-                    }
-                  ev.accepted = true
-                } else if (ev.key === Qt.Key_Backspace && searchInput.text.length === 0) {
-                  root.open = false
-                  ev.accepted = true
-                }
-              }
-            }
-
-            BusyIndicator {
-              anchors { right: parent.right; rightMargin: 16; verticalCenter: parent.verticalCenter }
-              width: 16; height: 16
-              running: root.searching
-              visible: root.searching
-            }
-
-            Rectangle {
-              anchors { right: parent.right; rightMargin: 40; verticalCenter: parent.verticalCenter }
-              width: modeLabel.width + 20
-              height: 22
-              radius: 11
-              color: Qt.rgba(0.65,0.42,1,0.12)
-              border.width: 1
-              border.color: Qt.rgba(0.65,0.42,1,0.35)
-
-              Text {
-                id: modeLabel
-                anchors.centerIn: parent
-                text: root.modePillText
-                color: "#a78bfa"
-                font.pixelSize: 9
-                font.letterSpacing: 1.2
-                font.weight: Font.Medium
-              }
-            }
-          }
-
-          Item {
-            width: parent.width
-            height: root.mode === "answer" && root.answerText.length > 0 ? answerLayout.height + 16 : 0
-            visible: root.mode === "answer" && root.answerText.length > 0
-
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.open = false
-              z: -1
-            }
-
-            Column {
-              id: answerLayout
-              x: 14
-              y: 8
-              width: parent.width - 28
-              spacing: 4
-
-              Text {
-                text: root.answerTitle
-                color: root.accent
-                font.pixelSize: 15
-                font.weight: Font.Bold
-                wrapMode: Text.Wrap
-                width: parent.width
-                visible: root.answerTitle.length > 0
-              }
-
-              Repeater {
-                id: answerRepeater
-                model: root.answerSegments
-                delegate: Item {
-                  required property var modelData
-                  required property int index
-                  width: answerLayout.width
-                  height: modelData.type === "code" ? codeBlock.height + 8 : textBlock.height + 4
-
-                  Text {
-                    id: textBlock
-                    visible: modelData.type === "text"
-                    text: modelData.content
-                    color: root.textPrimary
-                    font.pixelSize: 13
-                    wrapMode: Text.Wrap
-                    width: parent.width
-                    lineHeight: 1.4
-                    textFormat: Text.MarkdownText
-                  }
-
-                  Rectangle {
-                    id: codeBlock
-                    visible: modelData.type === "code"
-                    width: parent.width
-                    height: codeText.height + 40
-                    radius: 8
-                    color: "#1a1a1a"
-                    border.width: 1
-                    border.color: "#2a2a2a"
-
-                    Rectangle {
-                      anchors { top: parent.top; right: parent.right; topMargin: 4; rightMargin: 4 }
-                      width: langLabel.width + 14
-                      height: 22
-                      radius: 11
-                      color: Qt.rgba(0.29,0.87,0.5,0.15)
-
-                      Text {
-                        id: langLabel
-                        anchors.centerIn: parent
-                        text: modelData.lang || "sh"
-                        color: "#4ade80"
-                        font.pixelSize: 9
-                        font.weight: Font.Medium
-                      }
-                    }
-
-                    Rectangle {
-                      id: codeCopyBtn
-                      anchors { top: parent.top; right: parent.right; topMargin: 4; rightMargin: langLabel.width + 24 }
-                      width: copyLabel.width + 16
-                      height: 22
-                      radius: 11
-                      color: codeCopyArea.containsMouse ? Qt.rgba(0.29,0.87,0.5,0.25) : Qt.rgba(0.29,0.87,0.5,0.12)
-                      border.width: 1
-                      border.color: codeCopyArea.containsMouse ? Qt.rgba(0.29,0.87,0.5,0.5) : Qt.rgba(0.29,0.87,0.5,0.25)
-
-                      Text {
-                        id: copyLabel
-                        anchors.centerIn: parent
-                        text: codeBlockItem.copied ? "copied!" : "copy"
-                        color: codeBlockItem.copied ? "#4ade80" : Qt.rgba(0.29,0.87,0.5,0.8)
-                        font.pixelSize: 9
-                        font.weight: Font.Medium
-                        font.letterSpacing: 0.5
-                      }
-
-                      MouseArea {
-                        id: codeCopyArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                          Quickshell.execDetached(["wl-copy", "--", codeBlockItem.copyContent])
-                          codeBlockItem.copied = true
-                          codeCopyTimer.restart()
-                        }
-                      }
-                    }
-
-                    Text {
-                      id: codeText
-                      x: 10
-                      y: 32
-                      width: parent.width - 20
-                      text: modelData.content
-                      color: "#e5e5e5"
-                      font.family: "monospace"
-                      font.pixelSize: 12
-                      wrapMode: Text.Wrap
-                    }
-
-                    QtObject {
-                      id: codeBlockItem
-                      property string copyContent: modelData.content
-                      property bool copied: false
-                    }
-
-                    Timer {
-                      id: codeCopyTimer
-                      interval: 1500
-                      onTriggered: codeBlockItem.copied = false
-                    }
-                  }
-                }
-              }
-
-              Item {
-                id: sourceRow
-                width: parent.width
-                height: sourceText.height
-                visible: root.answerSource.length > 0
-
-                Text {
-                  id: sourceText
-                  text: "Source: " + root.answerSource
-                  color: root.textSecondary
-                  font.pixelSize: 11
-                  width: parent.width
-                  elide: Text.ElideRight
-                }
-              }
-            }
-
-          }
-
-          Item {
-            width: parent.width
-            height: root.mode === "answer" && !root.hasGroqKey && root.answerText.length === 0 ? setupLayout.height + 16 : 0
-            visible: root.mode === "answer" && !root.hasGroqKey && root.answerText.length === 0
-
-            onVisibleChanged: if (visible) groqSetupInput.forceActiveFocus()
-
-            Column {
-              id: setupLayout
-              x: 14
-              y: 8
-              width: parent.width - 28
-              spacing: 8
-
-              Text {
-                text: "Groq API key required"
-                color: root.accent
-                font.pixelSize: 15
-                font.weight: Font.Bold
-              }
-
-              Text {
-                text: "Enter your Groq API key to use the ASK (/s) mode. Get one for free at console.groq.com"
-                color: root.textSecondary
-                font.pixelSize: 11
-                wrapMode: Text.Wrap
-                width: parent.width
-              }
-
-              Rectangle {
-                width: parent.width
-                height: 32
-                radius: 6
-                color: "#1c1c1c"
-                border.color: root.dividerColor
-
-                TextInput {
-                  id: groqSetupInput
-                  anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
-                  color: root.textPrimary
-                  font.pixelSize: 12
-                  clip: true
-                  echoMode: TextInput.Password
-                  onTextChanged: root.groqKeyInput = text
-                  Keys.onReturnPressed: {
-                    if (text.trim().length > 0)
-                      root.saveGroqKey(text.trim())
-                  }
-                  Keys.onEscapePressed: root.open = false
-                }
-              }
-
-              Rectangle {
-                width: 60
-                height: 26
-                radius: 4
-                color: root.accent
-
-                Text {
-                  anchors.centerIn: parent
-                  text: "Save"
-                  color: "#ffffff"
-                  font.pixelSize: 11
-                  font.weight: Font.Medium
-                }
-
-                MouseArea {
-                  anchors.fill: parent
-                  onClicked: {
-                    if (groqSetupInput.text.trim().length > 0)
-                      root.saveGroqKey(groqSetupInput.text.trim())
-                  }
-                }
-              }
-            }
-
-            MouseArea {
-              anchors.fill: parent
-              cursorShape: Qt.PointingHandCursor
-              onClicked: root.open = false
-              z: -1
-            }
-          }
-
-          ListView {
-            id: resultList
-            width: parent.width
-            height: Math.min(root.results.length, 8) * 56
-            clip: true
-            model: root.results
-            currentIndex: root.selectedIndex
-            boundsBehavior: Flickable.StopAtBounds
-            interactive: true
-            visible: root.mode === "app" || root.mode === "file" || root.mode === "youtube" || root.mode === "shell" || root.mode === "web"
-
-            delegate: Item {
-              id: row
-              width: resultList.width
-              height: 56
-              required property var modelData
-              required property int index
-              readonly property bool isSelected: index === root.selectedIndex
-              readonly property bool isApp: row.modelData.type === "app"
-              readonly property bool isYt: row.modelData.type === "youtube"
-              readonly property bool isShell: row.modelData.type === "shell"
-              readonly property bool isWeb: row.modelData.type === "web"
-
-              Rectangle {
-                anchors.fill: parent
-                anchors.leftMargin: 4
-                anchors.rightMargin: 4
-                anchors.topMargin: 2
-                anchors.bottomMargin: 2
-                radius: root.radiusInner
-                color: row.isSelected ? bgRowHover : "transparent"
-              }
-
-              Rectangle {
-                anchors.left: parent.left
-                anchors.leftMargin: 4
-                anchors.topMargin: 8
-                anchors.bottomMargin: 8
-                width: 3
-                radius: 2
-                color: root.accent
-                visible: row.isSelected
-                opacity: 0.8
-              }
-
-              // App icon
-              Item {
-                x: 16
-                width: 32
-                height: 32
-                anchors.verticalCenter: parent.verticalCenter
-                visible: isApp
-
-                Image {
-                  id: appIcon
-                  anchors.fill: parent
-                  source: isApp && row.modelData.iconPath ? "file://" + row.modelData.iconPath : ""
-                  sourceSize { width: 32; height: 32 }
-                  fillMode: Image.PreserveAspectFit
-                  asynchronous: true
-                  visible: status === Image.Ready
-                }
-
-                Rectangle {
-                  anchors.fill: parent
-                  radius: width / 2
-                  color: Qt.rgba(0.96,0.45,0.71,0.2)
-                  visible: !isApp || !row.modelData.iconPath || appIcon.status !== Image.Ready
-
-                  Text {
-                    anchors.centerIn: parent
-                    text: isApp ? row.modelData.name.charAt(0).toUpperCase() : ""
-                    color: root.textSecondary
-                    font.pixelSize: 14
-                    font.weight: Font.Bold
-                  }
-                }
-              }
-
-              // YouTube thumbnail area
-              Item {
-                x: 16
-                width: 32
-                height: 32
-                anchors.verticalCenter: parent.verticalCenter
-                visible: isYt
-
-                Rectangle {
-                  anchors.fill: parent
-                  radius: 6
-                  color: Qt.rgba(0.65,0.42,1,0.15)
-
-                  Text {
-                    anchors.centerIn: parent
-                    text: "\u25B6"
-                    color: "#a78bfa"
-                    font.pixelSize: 14
-                  }
-                }
-              }
-
-              // Shell icon
-              Item {
-                x: 16
-                width: 32
-                height: 32
-                anchors.verticalCenter: parent.verticalCenter
-                visible: isShell
-
-                Rectangle {
-                  anchors.fill: parent
-                  radius: 6
-                  color: Qt.rgba(0.29,0.87,0.5,0.15)
-
-                  Text {
-                    anchors.centerIn: parent
-                    text: "$"
-                    color: "#4ade80"
-                    font.pixelSize: 16
-                    font.weight: Font.Bold
-                  }
-                }
-              }
-
-              // Web icon
-              Item {
-                x: 16
-                width: 32
-                height: 32
-                anchors.verticalCenter: parent.verticalCenter
-                visible: isWeb
-
-                Rectangle {
-                  anchors.fill: parent
-                  radius: 6
-                  color: Qt.rgba(0.38,0.65,1,0.15)
-
-                  Text {
-                    anchors.centerIn: parent
-                    text: "\u2197"
-                    color: "#60a5fa"
-                    font.pixelSize: 18
-                    font.weight: Font.Bold
-                  }
-                }
-              }
-
-              Column {
-                x: isApp ? 54 : (isYt ? 54 : (isShell ? 54 : (isWeb ? 54 : 22)))
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 3
-
-                Text {
-                  text: isShell ? row.modelData.code : (isWeb ? row.modelData.code : row.modelData.name)
-                  color: root.textPrimary
-                  font.pixelSize: 14
-                  font.weight: Font.Normal
-                  elide: Text.ElideRight
-                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : (isWeb ? 380 : 420)))
-                  opacity: row.isSelected ? 1.0 : 0.85
-                }
-
-                Text {
-                  id: descriptionText
-                  text: isApp
-                    ? (row.modelData.comment || row.modelData.categories || "")
-                    : isShell
-                      ? row.modelData.command
-                      : isYt
-                        ? (row.modelData.author + "  \u00B7  " + row.modelData.duration)
-                        : isWeb
-                          ? row.modelData.url
-                          : row.modelData.dir + (row.modelData.ext ? "  \u00B7  " + row.modelData.ext : "")
-                  color: isApp ? root.textSecondary : (isShell ? "#4ade80" : (isYt ? "#ff4444" : (isWeb ? "#60a5fa" : "#eaff00")))
-                  font.pixelSize: 11
-                  elide: Text.ElideRight
-                  width: isApp ? 340 : (isYt ? 380 : (isShell ? 380 : (isWeb ? 380 : 420)))
-                  opacity: 0.7
-                }
-              }
-
-              // Alias badge
-              Text {
-                anchors { right: typePill.left; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                text: isApp && row.modelData.alias ? ":" + row.modelData.alias : ""
-                color: "#f472b6"
-                font.pixelSize: 9
-                font.letterSpacing: 1.2
-                font.weight: Font.Medium
-                visible: text.length > 0
-                opacity: 0.8
-              }
-
-              // Type pill
-              Rectangle {
-                id: typePill
-                anchors { right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
-                width: catLabel.width + 18
-                height: 22
-                radius: 11
-                color: Qt.rgba(1,1,1,0.06)
-
-                Rectangle {
-                  anchors.fill: parent
-                  radius: 11
-                  color: row.modelData.info.color
-                  opacity: 0.2
-                }
-
-                Text {
-                  id: catLabel
-                  anchors.centerIn: parent
-                  text: row.modelData.info.label
-                  color: row.modelData.info.color
-                  font.pixelSize: 9
-                  font.letterSpacing: 1.2
-                  font.weight: Font.Medium
-                }
-              }
-
-              MouseArea {
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                onPositionChanged: root.selectedIndex = row.index
-                onClicked: function(mouse) {
-                  if (mouse.button === Qt.RightButton) {
-                    if (isApp) {
-                      root.aliasInputDesktopId = row.modelData.desktopId
-                      root.aliasInputText = row.modelData.alias || ""
-                      aliasInput.forceActiveFocus()
-                      aliasInput.selectAll()
-                    }
-                    return
-                  }
-                  root.launch(row.modelData)
-                }
-              }
-            }
-          }
-
-          // Alias input overlay
-          Item {
-            width: parent.width
-            height: root.aliasInputDesktopId.length > 0 ? 50 : 0
-            visible: height > 0
-            clip: true
-
-            Behavior on height {
-              NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-            }
-
-            Rectangle {
-              anchors { left: parent.left; leftMargin: 8; right: parent.right; rightMargin: 8; top: parent.top; topMargin: 4 }
-              height: 40
-              radius: root.radiusInner
-              color: "#1c1c1c"
-              border.width: 1
-              border.color: root.dividerColor
-
-              Text {
-                anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                text: root.aliasSavedFeedback ? "Alias saved!" : "Alias:"
-                color: root.aliasSavedFeedback ? "#4ade80" : root.textSecondary
-                font.pixelSize: 11
-              }
-
-              TextInput {
-                id: aliasInput
-                anchors { left: parent.left; leftMargin: 52; right: saveBtn.left; rightMargin: 4; verticalCenter: parent.verticalCenter }
-                height: 26
-                color: root.textPrimary
-                font.pixelSize: 12
-                clip: true
-                text: root.aliasInputText
-                selectByMouse: true
-                maximumLength: 20
-
-                onTextChanged: root.aliasInputText = text
-
-                Keys.onEscapePressed: {
-                  root.aliasInputDesktopId = ""
-                  searchInput.forceActiveFocus()
-                }
-                Keys.onReturnPressed: {
-                  if (root.aliasInputText.trim().length > 0) {
-                    root.saveAlias(root.aliasInputText, root.aliasInputDesktopId)
-                  } else {
-                    var existing = root.aliasForDesktopId(root.aliasInputDesktopId)
-                    if (existing)
-                      root.removeAlias(existing)
-                  }
-                  root.aliasInputDesktopId = ""
-                  searchInput.forceActiveFocus()
-                }
-              }
-
-              Item {
-                id: saveBtn
-                anchors { right: parent.right; rightMargin: 6; verticalCenter: parent.verticalCenter }
-                width: 28
-                height: 26
-
-                Rectangle {
-                  anchors.fill: parent
-                  radius: 4
-                  color: saveArea.containsMouse ? "#2a2a2a" : "transparent"
-                }
-
-                Text {
-                  anchors.centerIn: parent
-                  text: "\u2713"
-                  color: root.textSecondary
-                  font.pixelSize: 12
-                }
-
-                MouseArea {
-                  id: saveArea
-                  anchors.fill: parent
-                  hoverEnabled: true
-                  onClicked: {
-                    if (root.aliasInputText.trim().length > 0) {
-                      root.saveAlias(root.aliasInputText, root.aliasInputDesktopId)
-                    } else {
-                      var existing = root.aliasForDesktopId(root.aliasInputDesktopId)
-                      if (existing)
-                        root.removeAlias(existing)
-                    }
-                    root.aliasInputDesktopId = ""
-                    searchInput.forceActiveFocus()
-                  }
-                }
-              }
-            }
-          }
-
-          Rectangle {
-            width: parent.width
-            height: root.captureSavedFeedback ? 36 : 0
-            visible: height > 0
-            color: "transparent"
-            clip: true
-
-            Behavior on height {
-              NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
-            }
-
-            Text {
-              anchors { left: parent.left; leftMargin: 16; verticalCenter: parent.verticalCenter }
-              text: root.captureFeedbackText
-              color: "#4ade80"
-              font.pixelSize: 12
-            }
-          }
-
-          Item {
-            width: parent.width
-            height: root.results.length > 8 ? 6 : 0
-          }
-        }
-      }
-    }
+  SpotlightWindow {
+    backend: root
   }
 }

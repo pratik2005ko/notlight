@@ -1,14 +1,27 @@
-notlight — Metrics Report (post-audit)
-=======================================
+notlight — Metrics Report (post-refactor)
+=========================================
 
 PROJECT SIZE
-  Source files:   1,661 lines across 5 files
-  Spotlight.qml:  1,484 lines (56K)
-  yt-search.cpp:  179 lines (4.8K)
-  shell.qml:      10 lines
-  toggle-spotlight: 16 lines
-  yt-search.js:   10 lines
-  Package JSON:   5 files, ~13K total
+  Source files:   2,374 lines across 11 files
+  Spotlight.qml:  1,194 lines — backend + theme system + all state/Process/functions
+  Split files:    6 .qml files (SpotlightWindow, SearchBar, AnswerView,
+                  GroqSetup, ResultRow) — each 92–370 lines
+  yt-search.cpp:  179 lines (unchanged)
+  shell.qml:      10 lines (unchanged)
+  install.sh:     70 lines, update.sh: 15 lines, toggle-spotlight: 16 lines
+
+BREAKDOWN BY FILE
+  Spotlight.qml        1194 lines  50.3%  (Scope root + theme system + all state/Process/functions)
+  SpotlightWindow.qml   370 lines  15.6%  (PanelWindow + layout + alias/capture overlays)
+  ResultRow.qml         212 lines  10.0%  (ListView delegate, 5 result types, now fully themed)
+  AnswerView.qml        165 lines   7.8%  (Groq answer + code blocks + copy, now fully themed)
+  SearchBar.qml         152 lines   7.2%  (input field + mode pill + key dispatch, now fully themed)
+  yt-search.cpp         179 lines   8.4%  (YouTube scraper binary)
+  GroqSetup.qml          92 lines   4.3%  (API key entry prompt, now fully themed)
+  install.sh             70 lines   3.3%
+  toggle-spotlight       16 lines   0.8%
+  update.sh              15 lines   0.7%
+  shell.qml              10 lines   0.5%
 
 BINARY FOOTPRINT
   yt-search:      155K (ELF 64-bit, -O2 -s with libcurl + nlohmann/json)
@@ -26,7 +39,7 @@ PERFORMANCE — App Search (default mode)
 
 PERFORMANCE — File Search (/f)
   Engine:         fd (Rust)
-  Debounce:       250ms (was 120ms — avoids overlapping fd processes)
+  Debounce:       250ms
   Typical query:  0.01–0.05s
   Results:        Top 30, sorted by prefix match + name length
   Exclusions:     .cache, .git, .cargo, .rustup, .npm, .gradle, .mozilla,
@@ -41,9 +54,9 @@ PERFORMANCE — AI Answer (/s)
 PERFORMANCE — YouTube Search (/yt)
   Engine:         Compiled C++ binary (yt-search), libcurl + nlohmann/json
   CPU time:       0.12s user, 0.05s system
-  Wall time:      ~1.5s (was ~5s before compression + persistent connection)
+  Wall time:      ~1.5s
   Improvement:    Compression (gzip/brotli) + HTTP/2 connection reuse
-  Binary size:    155K (-O2 -s stripped, was 196K unstripped)
+  Binary size:    155K (-O2 -s stripped)
 
 PERFORMANCE — Google Search (/g)
   Engine:         Qt.openUrlExternally — zero local cost
@@ -51,17 +64,25 @@ PERFORMANCE — Google Search (/g)
 PERFORMANCE — Web Mode (/w) & Shell Mode (/sh)
   Engine:         In-memory JS object lookup — instant (<1ms)
 
-SECURITY
-  Shell injection: Fixed — write functions use python3 -c with argv instead of
-                   shell string interpolation
-
 ARCHITECTURE
   Lifecycle:      systemd user service (auto-start, auto-restart)
-  Toggle IPC:     qs ipc call spotlight toggle (retries with systemctl --user start)
+  Toggle IPC:     qs ipc call spotlight toggle
   On-close:       Daemon stays alive (~2MB RSS overhead vs cold launch)
-  Memory saved:   ~22MB vs old --daemonize instance (106MB vs 228MB for stale proc)
+  Split:          1 monolithic QML → 7 focused QML files (backend + 6 UI components)
+  Imports:        Each new file imports only the QML modules it needs
+  Data flow:      All UI components receive `required property var backend` (the Scope)
+                  for state reads and function calls. No deep property threading.
+  Theme system:   2 theme JS objects (`_macosTheme`, `_win95Theme`) with 75+ tokens
+                  each (colors, radii, borders, fonts, animation params, structural
+                  flags). 60+ tokens exposed as `readonly property` on root Scope.
+                  Components reference all visuals via `backend.<tokenName>` —
+                  zero hardcoded colors in component files.
+                  Switch via: `backend.applyTheme("macos"|"win95")` from QML,
+                  `/theme macos|win95` search command, or
+                  `qs ipc call spotlight themeMacos` / `themeWin95`.
+                  Persisted in spotlight-data/theme.json, loaded on each open.
 
-AUDIT CHANGES APPLIED (July 2026)
+AUDIT CHANGES (July 2026)
   #1  O(n²) → O(1) aliasById reverse map
   #2  Removed duplicate filterApps call per keystroke
   #3  searchTimer debounce 120ms → 250/400ms
@@ -70,4 +91,12 @@ AUDIT CHANGES APPLIED (July 2026)
   #6  __import__('re') → import re at top of loadApps script
   #7  Canvas → static SVG Image (no runtime repaints)
   #8  fd exclusions for noisy directories
-  Arch Reverted:  On-demand launch was flaky — reverted to systemd daemon
+  #9  REFACTOR: Spotlight.qml split into 6 components (1,134 + 370 + 212 + 165 + 152 + 92 QML lines)
+  #10 THEME SYSTEM: 2 themes (macOS, Win95) with 75+ tokens each. All hardcoded
+      colors in SearchBar.qml, AnswerView.qml, GroqSetup.qml, ResultRow.qml,
+      SpotlightWindow.qml replaced with theme tokens. 0 hardcoded colors remain
+      in component files. Structural flags (title bar, bevel border, shadow)
+      driven by theme booleans.
+  #11 THEME PERSISTENCE: save/load themeName to spotlight-data/theme.json.
+      /theme <name> search command to switch themes on the fly.
+      IPC: qs ipc call spotlight themeMacos / themeWin95.
