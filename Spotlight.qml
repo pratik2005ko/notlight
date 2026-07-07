@@ -108,13 +108,13 @@ Scope {
     hasShadow: false,
     shadowColor: "#66000000",
     glassHighlight: "#0dffffff",
-    panelScaleClosed: 1.0,
-    animOpacityDuration: 60,
-    animOpacityEasing: Easing.Linear,
-    animScaleDuration: 0,
-    animScaleEasing: Easing.Linear,
-    animHeightDuration: 0,
-    animHeightEasing: Easing.Linear,
+    panelScaleClosed: 0.96,
+    animOpacityDuration: 140,
+    animOpacityEasing: Easing.OutCubic,
+    animScaleDuration: 260,
+    animScaleEasing: Easing.OutCubic,
+    animHeightDuration: 180,
+    animHeightEasing: Easing.OutCubic,
     radius: 0,
     radiusInner: 0,
     surface: "#c0c0c0",
@@ -1099,7 +1099,7 @@ Scope {
     var q = root.searchQuery.trim()
     if (q.length < 1) { root.results = []; return }
     root.searching = true
-    var binPath = root.home + "/active projects c/spotlight/yt-search"
+    var binPath = root.home + "/projects/spotlight/yt-search"
     ytSearchProc.running = false
     ytSearchProc.command = [binPath, q]
     ytSearchProc.running = true
